@@ -398,4 +398,3 @@ INSERT INTO villagers (name, age, gender, category, contact_number, address, cen
     ('Bhavana Kumari', 24, 'Female', 'Lactating Mother', '9848022341', 'H.No 1-72, Rajiv Nagar', '11111111-1111-1111-1111-111111111111'),
     ('Chinnu Reddy', 4, 'Male', 'Child', '9848022341', 'H.No 1-72, Rajiv Nagar', '11111111-1111-1111-1111-111111111111')
 ON CONFLICT DO NOTHING;
-

@@ -10,7 +10,7 @@ Complete production-ready Flask backend for the Smart Anganwadi Portal.
 app.py            ← Complete Flask backend (single file)
 .env              ← Environment variables
 requirements.txt  ← Python dependencies
-schema.sql        ← Supabase database schema + seed data
+sql/              ← Folder containing all Supabase database schema & seed scripts
 README.md         ← This file
 ```
 
