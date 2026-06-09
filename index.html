@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>https://github.com/kundurukarthik15-gif/Smart-Anganwadi-Portal.git</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     LANDING PAGE
+══════════════════════════════════════════════ -->
+<div id="landing-page">
+  <nav class="land-nav">
+    <div class="nav-brand">
+      <div class="brand-icon"><i class="bi bi-house-heart-fill"></i></div>
+      <div class="brand-text">
+        <span class="brand-name">Smart Anganwadi Portal</span>
+        <span class="brand-sub">Digital Management System</span>
+      </div>
+    </div>
+    <button class="btn-nav-login" onclick="showLogin()">
+      <i class="bi bi-box-arrow-in-right"></i> Sign In
+    </button>
+  </nav>
+
+  <main class="hero-section">
+    <div class="hero-center">
+      <div class="hero-logo"><i class="bi bi-house-heart-fill"></i></div>
+      <div class="hero-tag">🌟 Government Child Welfare</div>
+      <h1 class="hero-h1"><span class="grad-text">Smart Anganwadi</span> Portal</h1>
+      <p class="hero-p">A complete digital platform for child nutrition, health monitoring, stock distribution, BMI tracking and government reporting — all in one place.</p>
+      <button class="btn-hero-cta" onclick="showLogin()">
+        <i class="bi bi-box-arrow-in-right"></i> Get Started Free
+      </button>
+      <div class="hero-modules">
+        <div class="hm"><i class="bi bi-box-seam-fill"></i> Stock Management</div>
+        <div class="hm"><i class="bi bi-arrow-right-circle-fill"></i> Distribution</div>
+        <div class="hm"><i class="bi bi-people-fill"></i> Children</div>
+        <div class="hm"><i class="bi bi-heart-pulse-fill"></i> BMI &amp; Nutrition</div>
+        <div class="hm"><i class="bi bi-person-heart"></i> Beneficiaries</div>
+        <div class="hm"><i class="bi bi-book-fill"></i> Story Books</div>
+        <div class="hm"><i class="bi bi-bar-chart-fill"></i> Reports</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="land-footer">
+    <div class="foot-brand"><i class="bi bi-house-heart-fill"></i> Smart Anganwadi Portal v2.0</div>
+    <div class="foot-copy">Government Child Welfare Initiative &bull; 2024 &bull; All Rights Reserved</div>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     LOGIN PAGE
+══════════════════════════════════════════════ -->
+<div id="login-page">
+  <div class="login-bg">
+    <div class="lg-shape s1"></div>
+    <div class="lg-shape s2"></div>
+    <div class="lg-shape s3"></div>
+  </div>
+  <div class="login-center">
+    <div class="login-card">
+      <div class="lc-header">
+        <div class="lc-icon"><i class="bi bi-house-heart-fill"></i></div>
+        <h3>Smart Anganwadi Portal</h3>
+        <p>Sign in to your center account</p>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-form">
+        <div class="form-floating mb-3">
+          <input type="email" class="form-control lc-input" id="login-email" placeholder="Email" required/>
+          <label for="login-email"><i class="bi bi-envelope-fill"></i> Email Address</label>
+        </div>
+        <div class="form-floating mb-3 position-relative">
+          <input type="password" class="form-control lc-input" id="login-password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <label for="login-password"><i class="bi bi-lock-fill"></i> Password</label>
+          <button class="pw-toggle" onclick="togglePw()" type="button">
+            <i class="bi bi-eye" id="pw-eye"></i>
+          </button>
+        </div>
+        <div id="login-err" class="login-error" style="display:none"></div>
+        <button class="btn-login-submit" onclick="doLogin()">
+          <i class="bi bi-box-arrow-in-right"></i> Sign In to Portal
+        </button>
+        <button class="back-to-land" onclick="backToLanding()" style="margin-bottom:12px">
+          <i class="bi bi-arrow-left"></i> Back to Home
+        </button>
+        <div style="text-align:center">
+          <span style="font-size:13px;color:var(--text-s)">Don't have an account?</span>
+          <button onclick="showRegister()" style="background:none;border:none;color:var(--primary);font-weight:800;font-size:14px;cursor:pointer;padding:0 6px">Create Account</button>
+        </div>
+
+        <div class="demo-box">
+          <div class="demo-box-label">🔑 Demo Accounts</div>
+          <div class="demo-row">
+            <span><strong>Admin:</strong> admin@anganwadi.gov.in / admin@123</span>
+            <button onclick="fillDemo('admin@anganwadi.gov.in','admin@123')">Use</button>
+          </div>
+          <div class="demo-row">
+            <span><strong>Teacher:</strong> teacher@anganwadi.gov.in / teach@123</span>
+            <button onclick="fillDemo('teacher@anganwadi.gov.in','teach@123')">Use</button>
+          </div>
+          <div class="demo-row" style="border-bottom:none">
+            <span><strong>Staff:</strong> staff@anganwadi.gov.in / staff@123</span>
+            <button onclick="fillDemo('staff@anganwadi.gov.in','staff@123')">Use</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" style="display:none">
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control lc-input" id="reg-fullname" placeholder="Full name"/>
+          <label for="reg-fullname"><i class="bi bi-person-fill"></i> Full Name</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="email" class="form-control lc-input" id="reg-email" placeholder="Email"/>
+          <label for="reg-email"><i class="bi bi-envelope-fill"></i> Email Address</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="password" class="form-control lc-input" id="reg-password" placeholder="Password"/>
+          <label for="reg-password"><i class="bi bi-lock-fill"></i> Password</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="password" class="form-control lc-input" id="reg-password-confirm" placeholder="Confirm password"/>
+          <label for="reg-password-confirm"><i class="bi bi-lock-fill"></i> Confirm Password</label>
+        </div>
+        <hr style="border-color: rgba(255,255,255,0.2); margin: 16px 0 12px;">
+        <div style="color: var(--text-m); font-size: 13px; margin-bottom: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;"><i class="bi bi-building"></i> Center Details</div>
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control lc-input" id="reg-center-name" placeholder="Center Name"/>
+          <label for="reg-center-name"><i class="bi bi-building"></i> Center Name</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control lc-input" id="reg-district" placeholder="District"/>
+          <label for="reg-district"><i class="bi bi-map"></i> District</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control lc-input" id="reg-mandal" placeholder="Mandal"/>
+          <label for="reg-mandal"><i class="bi bi-map"></i> Mandal</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control lc-input" id="reg-village" placeholder="Village"/>
+          <label for="reg-village"><i class="bi bi-map"></i> Village</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="text" class="form-control lc-input" id="reg-address" placeholder="Address (optional)"/>
+          <label for="reg-address"><i class="bi bi-geo-alt"></i> Center Address</label>
+        </div>
+        <div class="form-floating mb-3">
+          <input type="tel" class="form-control lc-input" id="reg-mobile" placeholder="Mobile (optional)"/>
+          <label for="reg-mobile"><i class="bi bi-telephone"></i> Contact Mobile</label>
+        </div>
+        <div id="reg-err" class="login-error" style="display:none"></div>
+        <button class="btn-login-submit" onclick="doRegister()">
+          <i class="bi bi-person-plus-fill"></i> Create Account
+        </button>
+        <button class="back-to-land" onclick="backToLogin()">
+          <i class="bi bi-arrow-left"></i> Back to Sign In
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PORTAL (MAIN APP)
+══════════════════════════════════════════════ -->
+<div id="portal-wrap">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- Brand header -->
+    <div class="sb-brand">
+      <div class="sb-brand-icon"><i class="bi bi-house-heart-fill"></i></div>
+      <div class="sb-brand-text">
+        <span class="sb-brand-name">Anganwadi</span>
+        <span class="sb-brand-sub">Smart Portal v2.0</span>
+      </div>
+      <button class="sb-close d-lg-none" onclick="closeSidebar()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- User profile card -->
+    <div class="sb-profile">
+      <div class="sb-profile-avatar" id="sbu-avatar">SA</div>
+      <div class="sb-profile-info">
+        <div class="sb-profile-name"  id="sbu-name">Guest</div>
+        <div class="sb-profile-role"  id="sbu-role">Staff</div>
+        <div class="sb-profile-center" id="sbu-center">Center</div>
+        <div class="sb-profile-loc">
+          <i class="bi bi-geo-alt-fill"></i>
+          <span id="sbu-village">Village</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-section-label">Main</div>
+      <a class="sb-link active" onclick="showPage('dashboard')">
+        <span class="sb-icon"><i class="bi bi-speedometer2"></i></span>
+        <span class="sb-txt">Dashboard</span>
+      </a>
+
+      <div class="sb-section-label">Modules</div>
+      <a class="sb-link" onclick="showPage('stock')">
+        <span class="sb-icon"><i class="bi bi-box-seam-fill"></i></span>
+        <span class="sb-txt">Stock Management</span>
+      </a>
+      <a class="sb-link" onclick="showPage('distribution')">
+        <span class="sb-icon"><i class="bi bi-arrow-right-circle-fill"></i></span>
+        <span class="sb-txt">Stock Distribution</span>
+      </a>
+      <a class="sb-link" onclick="showPage('children')">
+        <span class="sb-icon"><i class="bi bi-people-fill"></i></span>
+        <span class="sb-txt">Child Management</span>
+      </a>
+      <a class="sb-link" onclick="showPage('attendance')">
+        <span class="sb-icon"><i class="bi bi-calendar-check-fill"></i></span>
+        <span class="sb-txt">Attendance</span>
+      </a>
+      <a class="sb-link" onclick="showPage('bmi')">
+        <span class="sb-icon"><i class="bi bi-heart-pulse-fill"></i></span>
+        <span class="sb-txt">BMI &amp; Nutrition Tracking</span>
+        <span class="nb" id="sb-bmi-badge"></span>
+      </a>
+      <a class="sb-link" onclick="showPage('beneficiary')">
+        <span class="sb-icon"><i class="bi bi-person-heart"></i></span>
+        <span class="sb-txt">Beneficiaries</span>
+      </a>
+      <a class="sb-link" onclick="showPage('survey')">
+        <span class="sb-icon"><i class="bi bi-file-earmark-bar-graph-fill"></i></span>
+        <span class="sb-txt">Village Survey</span>
+      </a>
+      <a class="sb-link" onclick="showPage('stories')">
+        <span class="sb-icon"><i class="bi bi-book-fill"></i></span>
+        <span class="sb-txt">Digital Story Books</span>
+      </a>
+      <a class="sb-link" onclick="showPage('reports')">
+        <span class="sb-icon"><i class="bi bi-bar-chart-fill"></i></span>
+        <span class="sb-txt">Reports</span>
+      </a>
+
+      <div class="sb-section-label">Account</div>
+      <a class="sb-link sb-logout" onclick="doLogout()">
+        <span class="sb-icon"><i class="bi bi-box-arrow-left"></i></span>
+        <span class="sb-txt">Logout</span>
+      </a>
+    </nav>
+
+    <div class="sb-footer-text">v2.0 &bull; Smart Anganwadi Portal</div>
+  </aside>
+
+  <div class="sb-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+  <!-- ── MAIN AREA ── -->
+  <div class="main-area">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="topbar-toggle" onclick="openSidebar()"><i class="bi bi-list"></i></button>
+        <div class="topbar-title">
+          <span id="tt-icon">📊</span>
+          <span id="tt-text">Dashboard</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-dark-toggle" onclick="toggleDarkMode()"><i class="bi bi-moon-fill" id="dm-icon-app"></i></button>
+        <div class="tb-date d-none d-md-flex">
+          <i class="bi bi-calendar3"></i>
+          <span id="today-date">Today</span>
+        </div>
+        <div class="tb-user">
+          <div class="tb-avatar" id="tb-avatar">AD</div>
+          <div class="d-none d-md-block">
+            <div class="tb-uname" id="tb-uname">Admin</div>
+            <div class="tb-ucenter" id="tb-ucenter">Center</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE CONTENT ── -->
+    <div class="page-content">
+
+      <!-- ══════════════ DASHBOARD ══════════════ -->
+      <div class="page active" id="page-dashboard">
+
+        <!-- Center Info Cards -->
+        <div class="info-bar">
+          <div class="info-card">
+            <div class="info-label"><i class="bi bi-person-fill"></i> Staff Name</div>
+            <div id="dash-staff-name" class="info-val">—</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label"><i class="bi bi-building"></i> Center</div>
+            <div id="dash-center-name" class="info-val">—</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label"><i class="bi bi-geo-alt-fill"></i> Village</div>
+            <div id="dash-village" class="info-val">—</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label"><i class="bi bi-map-fill"></i> Mandal</div>
+            <div id="dash-mandal" class="info-val">—</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label"><i class="bi bi-pin-map-fill"></i> District</div>
+            <div id="dash-district" class="info-val">—</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label"><i class="bi bi-calendar3"></i> Date</div>
+            <div id="today-date2" class="info-val">—</div>
+          </div>
+        </div>
+
+        <!-- Welcome Banner -->
+        <div class="dash-banner">
+          <div>
+            <div class="db-title" id="dash-welcome">Good Morning! 👋</div>
+            <div class="db-sub">Here's what's happening at your Anganwadi center today.</div>
+            <div class="dash-quick-btns">
+              <button onclick="showPage('stock')"><i class="bi bi-box-seam-fill"></i> Stock</button>
+              <button onclick="showPage('children')"><i class="bi bi-person-plus-fill"></i> Add Child</button>
+              <button onclick="showPage('bmi')"><i class="bi bi-heart-pulse-fill"></i> BMI</button>
+              <button onclick="showPage('reports')"><i class="bi bi-bar-chart-fill"></i> Reports</button>
+            </div>
+          </div>
+          <div class="db-emoji d-none d-lg-block">🏫</div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stat-cards-row" id="dash-stats"></div>
+
+        <!-- Alerts -->
+        <div id="dash-notifs"></div>
+
+        <!-- Stock Overview + Recent Children -->
+        <div class="row g-4 mt-1">
+          <div class="col-xl-5">
+            <div class="pcard">
+              <div class="pcard-head">
+                <span class="pcard-title"><i class="bi bi-box-seam-fill"></i> Stock Overview</span>
+                <button class="pcard-link" onclick="showPage('stock')">View All →</button>
+              </div>
+              <div id="dash-stock"></div>
+            </div>
+          </div>
+          <div class="col-xl-4">
+            <div class="pcard">
+              <div class="pcard-head">
+                <span class="pcard-title"><i class="bi bi-people-fill"></i> Recent Children</span>
+                <button class="pcard-link" onclick="showPage('children')">View All →</button>
+              </div>
+              <div id="dash-children"></div>
+            </div>
+          </div>
+          <div class="col-xl-3">
+            <div class="pcard">
+              <div class="pcard-head">
+                <span class="pcard-title"><i class="bi bi-heart-pulse-fill"></i> BMI Summary</span>
+                <button class="pcard-link" onclick="showPage('bmi')">View All →</button>
+              </div>
+              <div id="dash-bmi-summary"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /dashboard -->
+
+      <!-- ══════════════ STOCK MANAGEMENT ══════════════ -->
+      <div class="page" id="page-stock">
+        <div class="page-head">
+          <div>
+            <h1 class="ph-title">📦 Stock Management</h1>
+            <p class="ph-sub">Add, update and track all nutrition stock items and inventory.</p>
+          </div>
+        </div>
+
+        <div class="tab-row">
+          <button class="ptab active" onclick="switchStockTab('inventory')"><i class="bi bi-list-ul"></i> Inventory</button>
+          <button class="ptab" onclick="switchStockTab('add')"><i class="bi bi-plus-circle"></i> Add Stock</button>
+          <button class="ptab" onclick="switchStockTab('history')"><i class="bi bi-clock-history"></i> History</button>
+        </div>
+
+        <!-- Inventory Tab -->
+        <div id="stock-inventory">
+          <div class="stat-cards-row" id="stock-stats"></div>
+          <div class="pcard">
+            <div class="pcard-head">
+              <span class="pcard-title"><i class="bi bi-table"></i> Current Inventory</span>
+              <div class="pcard-tools">
+                <input class="ptool-search" placeholder="🔍 Search items…" oninput="searchStock(this.value)"/>
+                <button class="btn-pdf" onclick="downloadStockPdf()">
+                  <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="ptable">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Item Name</th><th>Category</th>
+                    <th>Received</th><th>Distributed</th><th>Remaining</th>
+                    <th>Unit</th><th>Status</th><th>Last Updated</th>
+                  </tr>
+                </thead>
+                <tbody id="stock-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Stock Tab -->
+        <div id="stock-add" style="display:none">
+          <div class="row justify-content-center">
+            <div class="col-lg-6">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title"><i class="bi bi-plus-circle-fill"></i> Add New Stock</span>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="plabel">Item Name *</label>
+                    <select class="pselect" id="s-item">
+                      <option value="">Select item…</option>
+                      <option>Eggs</option>
+                      <option>Milk (Litres)</option>
+                      <option>Dates</option>
+                      <option>Chikki</option>
+                      <option>Nutrition Packets</option>
+                      <option>Rice (kg)</option>
+                      <option>Dal (kg)</option>
+                      <option>Oil (Litres)</option>
+                      <option>Biscuits (packets)</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="plabel">Quantity *</label>
+                    <input class="pinput" type="number" id="s-qty" placeholder="Enter quantity" min="1"/>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="plabel">Supplier / Source</label>
+                    <input class="pinput" id="s-supplier" placeholder="e.g. Government Supply"/>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="plabel">Date Received</label>
+                    <input class="pinput" type="date" id="s-date"/>
+                  </div>
+                  <div class="col-12">
+                    <label class="plabel">Notes (optional)</label>
+                    <input class="pinput" id="s-notes" placeholder="Any additional notes…"/>
+                  </div>
+                  <div class="col-12">
+                    <button class="btn-submit" onclick="addStock()">
+                      <i class="bi bi-plus-circle-fill"></i> Add to Inventory
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="stock-history" style="display:none">
+          <div class="pcard">
+            <div class="pcard-head">
+              <span class="pcard-title"><i class="bi bi-clock-history"></i> Stock Movement History</span>
+            </div>
+            <div class="table-responsive">
+              <table class="ptable">
+                <thead><tr><th>Date</th><th>Item</th><th>Action</th><th>Quantity</th><th>Details</th></tr></thead>
+                <tbody id="stock-hist-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div><!-- /stock -->
+
+      <!-- ══════════════ STOCK DISTRIBUTION ══════════════ -->
+      <div class="page" id="page-distribution">
+        <div class="page-head">
+          <div>
+            <h1 class="ph-title">📤 Stock Distribution</h1>
+            <p class="ph-sub">Distribute stock to children and beneficiaries, and view all distribution records.</p>
+          </div>
+          <button class="btn-pdf" onclick="downloadDistributionPdf()">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Download PDF
+          </button>
+        </div>
+
+        <div class="row g-4">
+          <!-- Left: Distribute Form -->
+          <div class="col-xl-5">
+            <div class="pcard">
+              <div class="pcard-head">
+                <span class="pcard-title"><i class="bi bi-arrow-right-circle-fill"></i> Record Distribution</span>
+              </div>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="plabel">Select Item *</label>
+                  <select class="pselect" id="d-item"></select>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Quantity *</label>
+                  <input class="pinput" type="number" id="d-qty" placeholder="Enter quantity" min="1"/>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Date</label>
+                  <input class="pinput" type="date" id="d-date"/>
+                </div>
+                <div class="col-12">
+                  <label class="plabel">Distributed To *</label>
+                  <input class="pinput" id="d-to" placeholder="e.g. All Children, Class A"/>
+                </div>
+                <div class="col-12">
+                  <label class="plabel">Staff Name</label>
+                  <input class="pinput" id="d-by" placeholder="Name of distributing staff"/>
+                </div>
+                <div class="col-12">
+                  <button class="btn-submit btn-green" onclick="distributeStock()">
+                    <i class="bi bi-arrow-right-circle-fill"></i> Record Distribution
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Records with filter -->
+          <div class="col-xl-7">
+            <div class="pcard">
+              <div class="pcard-head">
+                <span class="pcard-title"><i class="bi bi-clock-history"></i> Distribution Records</span>
+              </div>
+              <!-- Date Filter Tabs -->
+              <div class="dist-filter-row" id="dist-filter-row">
+                <button class="ptab active" onclick="filterDistHistory('today')">Today</button>
+                <button class="ptab" onclick="filterDistHistory('yesterday')">Yesterday</button>
+                <button class="ptab" onclick="filterDistHistory('week')">This Week</button>
+                <button class="ptab" onclick="filterDistHistory('month')">This Month</button>
+                <button class="ptab" onclick="filterDistHistory('all')">All</button>
+              </div>
+              <div class="table-responsive">
+                <table class="ptable">
+                  <thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Distributed To</th><th>By</th></tr></thead>
+                  <tbody id="stock-dist-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /distribution -->
+
+      <!-- ══════════════ CHILDREN MANAGEMENT ══════════════ -->
+      <div class="page" id="page-children">
+        <div class="page-head">
+          <div>
+            <h1 class="ph-title">👶 Children Management</h1>
+            <p class="ph-sub">Add, edit and manage children records including parent information.</p>
+          </div>
+          <div class="ph-actions">
+            <button class="btn-pdf" onclick="downloadChildrenPdf()">
+              <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+            </button>
+            <button class="btn-ph" onclick="openChildModal()">
+              <i class="bi bi-person-plus-fill"></i> Add Child
+            </button>
+          </div>
+        </div>
+        <div class="stat-cards-row" id="child-stats"></div>
+        <div class="pcard">
+          <div class="pcard-head">
+            <span class="pcard-title"><i class="bi bi-table"></i> All Children</span>
+            <div class="pcard-tools">
+              <input class="ptool-search" placeholder="🔍 Search by name…" oninput="searchChildren(this.value)"/>
+              <select class="ptool-select" onchange="filterChildren(this.value)">
+                <option value="">All Gender</option>
+                <option>Male</option>
+                <option>Female</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="ptable">
+              <thead>
+                <tr><th>#</th><th>Child Name</th><th>Age</th><th>Gender</th><th>Parent Name</th><th>Mobile</th><th>Enrolled</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="children-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /children -->
+
+      <!-- ══════════════ STUDENT ATTENDANCE ══════════════ -->
+      <div class="page" id="page-attendance">
+
+        <div class="page-head">
+          <div>
+            <h1 class="ph-title">📅 Student Attendance</h1>
+            <p class="ph-sub">Mark daily attendance for today only. View history by selecting a past date on the calendar.</p>
+          </div>
+          <div class="ph-actions">
+            <button class="btn-pdf" onclick="exportAttendancePdf()">
+              <i class="bi bi-file-earmark-pdf-fill"></i> Export PDF
+            </button>
+            <button class="btn-ph btn-green" id="save-att-btn" onclick="saveAttendance()">
+              <i class="bi bi-save2-fill"></i> Save Today
+            </button>
+          </div>
+        </div>
+
+        <!-- Top row: Stats + Calendar -->
+        <div class="row g-4 mb-4">
+
+          <!-- Left: stat cards + register -->
+          <div class="col-xl-8">
+
+            <!-- Date indicator + stats -->
+            <div class="att-date-banner" id="att-date-banner">
+              <div>
+                <div class="att-date-label">Marking Attendance For</div>
+                <div class="att-date-display" id="att-date-display">Today</div>
+              </div>
+              <div class="att-today-badge" id="att-mode-badge">Today</div>
+            </div>
+
+            <div class="stat-cards-row" id="att-stats"></div>
+
+            <!-- Attendance Register Table -->
+            <div class="pcard">
+              <div class="pcard-head">
+                <span class="pcard-title"><i class="bi bi-list-check"></i> Daily Register</span>
+                <div class="pcard-tools">
+                  <input class="ptool-search" placeholder="🔍 Search child…" oninput="searchAttendance(this.value)"/>
+                  <div class="att-legend">
+                    <span class="att-leg-dot" style="background:#10B981"></span> Present
+                    <span class="att-leg-dot" style="background:#EF4444;margin-left:10px"></span> Absent
+                  </div>
+                </div>
+              </div>
+              <div class="table-responsive">
+                <table class="ptable">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Child Name</th>
+                      <th>Age</th>
+                      <th>Gender</th>
+                      <th>Mark Attendance</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="attendance-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right: Calendar -->
+          <div class="col-xl-4">
+            <div class="pcard">
+              <div class="pcard-head">
+                <span class="pcard-title"><i class="bi bi-calendar3"></i> Calendar</span>
+              </div>
+              <!-- Calendar navigation -->
+              <div class="att-cal-nav">
+                <button class="att-cal-btn" onclick="calNav(-1)"><i class="bi bi-chevron-left"></i></button>
+                <span class="att-cal-month" id="cal-month-label"></span>
+                <button class="att-cal-btn" onclick="calNav(1)"><i class="bi bi-chevron-right"></i></button>
+              </div>
+              <div class="att-cal-grid" id="att-calendar"></div>
+              <div class="att-cal-legend">
+                <div class="att-cal-leg-item"><span class="att-cal-dot today-dot"></span> Today</div>
+                <div class="att-cal-leg-item"><span class="att-cal-dot saved-dot"></span> Saved</div>
+                <div class="att-cal-leg-item"><span class="att-cal-dot selected-dot"></span> Selected</div>
+              </div>
+            </div>
+
+            <!-- Quick Summary for selected date -->
+            <div class="pcard mt-4" id="att-summary-card">
+              <div class="pcard-head">
+                <span class="pcard-title"><i class="bi bi-bar-chart-fill"></i> Summary</span>
+              </div>
+              <div id="att-summary-body">
+                <div class="palert palert-ok" style="margin:0">
+                  <i class="bi bi-info-circle-fill"></i> Select a date to view summary.
+                </div>
+              </div>
+            </div>
+
+            <!-- Attendance Photo Upload Card -->
+            <div class="pcard mt-4">
+              <div class="pcard-head">
+                <span class="pcard-title"><i class="bi bi-camera-fill"></i> Register Photo</span>
+              </div>
+              <div class="pcard-body" style="padding:16px">
+                <div id="att-photo-preview-box" class="text-center mb-3" style="border:2px dashed var(--border);border-radius:12px;padding:20px;background:var(--bg)">
+                  <i class="bi bi-image" style="font-size:32px;color:var(--text-s)"></i>
+                  <div style="font-size:13px;color:var(--text-s);margin-top:6px">No photo uploaded for this date</div>
+                </div>
+                <div class="d-grid gap-2">
+                  <input type="file" id="att-photo-file" accept="image/*" style="display:none" onchange="uploadAttendancePhoto()"/>
+                  <button class="btn-ph" onclick="document.getElementById('att-photo-file').click()" id="att-photo-upload-btn">
+                    <i class="bi bi-upload"></i> Upload Photo
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /row -->
+
+        <!-- History Section -->
+        <div class="pcard">
+          <div class="pcard-head">
+            <span class="pcard-title"><i class="bi bi-clock-history"></i> Attendance History</span>
+            <span style="font-size:13px;color:var(--text-s);font-weight:600" id="att-history-label">All Saved Records</span>
+          </div>
+          <div class="table-responsive">
+            <table class="ptable">
+              <thead>
+                <tr><th>Date</th><th>Day</th><th>Total</th><th>Present</th><th>Absent</th><th>Attendance %</th><th>Action</th></tr>
+              </thead>
+              <tbody id="att-history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /attendance -->
+
+      <!-- ══════════════ VILLAGE SURVEY ══════════════ -->
+      <div class="page" id="page-survey">
+        <div class="page-head">
+          <div>
+            <h1 class="ph-title">🏡 Village Survey</h1>
+            <p class="ph-sub">Manage and track monthly/yearly village demographic surveys and analyze trends.</p>
+          </div>
+          <div class="ph-actions">
+            <button class="btn-pdf" onclick="downloadSurveyPdf()">
+              <i class="bi bi-file-earmark-pdf-fill"></i> Download PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="tab-row">
+          <button class="ptab active" onclick="switchSurveyTab('history')"><i class="bi bi-list-ul"></i> Survey History</button>
+          <button class="ptab" onclick="switchSurveyTab('add')"><i class="bi bi-plus-circle"></i> Record Survey</button>
+          <button class="ptab" onclick="switchSurveyTab('trends')"><i class="bi bi-bar-chart-fill"></i> Survey Trends</button>
+          <button class="ptab" onclick="switchSurveyTab('villagers')"><i class="bi bi-people-fill"></i> Villagers Registry</button>
+        </div>
+
+        <!-- Survey History Tab -->
+        <div id="survey-tab-history">
+          <div class="pcard">
+            <div class="pcard-head">
+              <span class="pcard-title"><i class="bi bi-table"></i> Survey Log Records</span>
+              <div class="pcard-tools">
+                <input class="ptool-search" placeholder="🔍 Search village…" oninput="searchSurveys(this.value)"/>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="ptable">
+                <thead>
+                  <tr>
+                    <th>Village Name</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Population</th>
+                    <th>Families</th>
+                    <th>Children</th>
+                    <th>Pregnant Women</th>
+                    <th>Lactating Mothers</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="survey-tbody">
+                  <tr>
+                    <td colspan="9" class="text-center" style="padding:28px;color:var(--text-s)">No survey records found. Conduct a survey.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Record Survey Tab -->
+        <div id="survey-tab-add" style="display:none">
+          <div class="row justify-content-center">
+            <div class="col-lg-8">
+              <div class="pcard">
+                <div class="pcard-head flex-wrap gap-2" style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="pcard-title" id="survey-form-title"><i class="bi bi-plus-circle-fill"></i> Add New Survey Entry</span>
+                  <button class="btn-submit btn-sm px-3" onclick="autoFillSurveyFromRegistry()" style="font-size: 12px; font-weight: 600; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: none; background: var(--theme); color: white; margin-left: 0;">
+                    <i class="bi bi-magic"></i> Auto-fill from Registry
+                  </button>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="plabel">Village Name *</label>
+                    <input class="pinput" id="vs-village-name" placeholder="Enter village name"/>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="plabel">Survey Year *</label>
+                    <input class="pinput" type="number" id="vs-year" value="2026" min="2000"/>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="plabel">Survey Month</label>
+                    <select class="pselect" id="vs-month">
+                      <option value="">Yearly Survey (No Month)</option>
+                      <option value="1">January</option>
+                      <option value="2">February</option>
+                      <option value="3">March</option>
+                      <option value="4">April</option>
+                      <option value="5">May</option>
+                      <option value="6">June</option>
+                      <option value="7">July</option>
+                      <option value="8">August</option>
+                      <option value="9">September</option>
+                      <option value="10">October</option>
+                      <option value="11">November</option>
+                      <option value="12">December</option>
+                    </select>
+                  </div>
+                  
+                  <div class="col-md-4">
+                    <label class="plabel">Total Population *</label>
+                    <input class="pinput" type="number" id="vs-population" placeholder="e.g. 1500" min="0"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="plabel">Total Families *</label>
+                    <input class="pinput" type="number" id="vs-families" placeholder="e.g. 300" min="0"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="plabel">Total Children *</label>
+                    <input class="pinput" type="number" id="vs-children" placeholder="e.g. 90" min="0"/>
+                  </div>
+                  
+                  <div class="col-md-6">
+                    <label class="plabel">Pregnant Women Count *</label>
+                    <input class="pinput" type="number" id="vs-pregnant" placeholder="e.g. 15" min="0"/>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="plabel">Lactating Mothers Count *</label>
+                    <input class="pinput" type="number" id="vs-lactating" placeholder="e.g. 12" min="0"/>
+                  </div>
+                  
+                  <div class="col-12 mt-4">
+                    <button class="btn-submit" onclick="saveSurvey()">
+                      <i class="bi bi-check-circle-fill"></i> Save Survey Record
+                    </button>
+                    <button class="btn-cancel" onclick="cancelSurveyEdit()" id="btn-cancel-survey-edit" style="display:none; margin-left: 8px;">
+                      Cancel Edit
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Survey Trends Tab -->
+        <div id="survey-tab-trends" style="display:none">
+          <div class="row g-4 mt-1">
+            <div class="col-xl-8">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title"><i class="bi bi-graph-up-arrow"></i> Demographic Trends over Time</span>
+                </div>
+                <div class="pcard-body" style="position:relative; height: 350px;">
+                  <canvas id="surveyTrendsChart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-4">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title"><i class="bi bi-pie-chart-fill"></i> Beneficiaries Ratio</span>
+                </div>
+                <div class="pcard-body" style="position:relative; height: 350px; display:flex; align-items:center; justify-content:center;">
+                  <canvas id="surveyRatioChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Villagers Registry Tab -->
+        <div id="survey-tab-villagers" style="display:none">
+          <div class="pcard">
+            <div class="pcard-head flex-wrap gap-2">
+              <span class="pcard-title"><i class="bi bi-people-fill"></i> Registered Villagers Directory</span>
+              <div class="pcard-tools flex-wrap gap-2">
+                <input class="ptool-search" id="villager-search" placeholder="🔍 Search name/address…" oninput="searchVillagers(this.value)" style="background: var(--bg-card); color: var(--text-p); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 13px; width: 180px;"/>
+                <select class="pselect w-auto py-1 px-2" id="villager-filter-category" onchange="filterVillagers(this.value)" style="height: 32px; font-size: 13px; border-radius: 6px; padding: 0 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-p);">
+                  <option value="">All Categories</option>
+                  <option value="Child">Child</option>
+                  <option value="Pregnant Woman">Pregnant Woman</option>
+                  <option value="Lactating Mother">Lactating Mother</option>
+                  <option value="General Resident">General Resident</option>
+                </select>
+                <button class="btn-submit btn-sm px-3" onclick="openVillagerModal()" style="font-size: 13px; font-weight: 500; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: none; background: var(--theme); color: white; margin-left: 0;">
+                  <i class="bi bi-person-plus-fill"></i> Add Villager
+                </button>
+                <button class="btn-pdf btn-sm px-3" onclick="downloadVillagersPdf()" style="font-size: 13px; font-weight: 500; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; background: var(--bg-card); color: var(--text-p); border: 1px solid var(--border);">
+                  <i class="bi bi-file-earmark-pdf-fill"></i> Export PDF
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="ptable">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Category</th>
+                    <th>Contact Number</th>
+                    <th>Address</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="villagers-tbody">
+                  <tr>
+                    <td colspan="7" class="text-center" style="padding:28px;color:var(--text-s)">No villagers registered. Click 'Add Villager' to add.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div><!-- /survey -->
+
+      <!-- Villager Modal -->
+      <div class="modal fade" id="villagerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content pmodal">
+            <div class="modal-header pmodal-head">
+              <h5 class="modal-title" id="villager-modal-title"><i class="bi bi-person-plus-fill"></i> Add / Edit Villager</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="plabel">Villager Name *</label>
+                  <input class="pinput" id="vm-name" placeholder="Full name of villager"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="plabel">Age (years) *</label>
+                  <input class="pinput" type="number" id="vm-age" placeholder="e.g. 28" min="0" max="150"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="plabel">Gender *</label>
+                  <select class="pselect" id="vm-gender">
+                    <option value="">Select…</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Category *</label>
+                  <select class="pselect" id="vm-category">
+                    <option value="">Select Category…</option>
+                    <option value="Child">Child</option>
+                    <option value="Pregnant Woman">Pregnant Woman</option>
+                    <option value="Lactating Mother">Lactating Mother</option>
+                    <option value="General Resident">General Resident</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Contact Number</label>
+                  <input class="pinput" id="vm-contact" placeholder="10-digit contact number"/>
+                </div>
+                <div class="col-12">
+                  <label class="plabel">Address</label>
+                  <input class="pinput" id="vm-addr" placeholder="H.No, Street/Village address"/>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer pmodal-foot">
+              <button class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+              <button class="btn-submit" onclick="saveVillager()">
+                <i class="bi bi-check-circle-fill"></i> Save Villager
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Child Modal -->
+      <div class="modal fade" id="childModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content pmodal">
+            <div class="modal-header pmodal-head">
+              <h5 class="modal-title"><i class="bi bi-person-plus-fill"></i> Add / Edit Child</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="plabel">Child Name *</label>
+                  <input class="pinput" id="cm-name" placeholder="Full name of child"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="plabel">Age (years) *</label>
+                  <input class="pinput" type="number" id="cm-age" placeholder="e.g. 4" min="0" max="12"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="plabel">Gender *</label>
+                  <select class="pselect" id="cm-gender">
+                    <option value="">Select…</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Parent Name</label>
+                  <input class="pinput" id="cm-parent" placeholder="Father / Mother name"/>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Parent Mobile</label>
+                  <input class="pinput" id="cm-mobile" placeholder="10-digit mobile number"/>
+                </div>
+                <div class="col-12">
+                  <label class="plabel">Address</label>
+                  <input class="pinput" id="cm-addr" placeholder="Village / Ward address"/>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer pmodal-foot">
+              <button class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+              <button class="btn-submit" onclick="saveChild()">
+                <i class="bi bi-check-circle-fill"></i> Save Child
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ BMI & NUTRITION ══════════════ -->
+      <div class="page" id="page-bmi">
+        <div class="page-head">
+          <div>
+            <h1 class="ph-title">🤖 BMI &amp; Nutrition Tracking</h1>
+            <p class="ph-sub">Calculate BMI, get AI-powered nutrition recommendations and monitor child health.</p>
+          </div>
+          <div class="ph-actions">
+            <button class="btn-ph" onclick="openBmiModal()">
+              <i class="bi bi-plus-circle-fill"></i> Add Record
+            </button>
+            <button class="btn-pdf" onclick="downloadBmiPdf()">
+              <i class="bi bi-file-earmark-pdf-fill"></i> Download PDF
+            </button>
+          </div>
+        </div>
+
+        <div class="stat-cards-row" id="bmi-stats"></div>
+        <div id="bmi-alert-area"></div>
+
+        <div class="tab-row">
+          <button class="ptab active" onclick="switchBmiTab('records')"><i class="bi bi-table"></i> All Records</button>
+          <button class="ptab" onclick="switchBmiTab('calculator')"><i class="bi bi-calculator-fill"></i> BMI Calculator</button>
+          <button class="ptab" onclick="switchBmiTab('critical')"><i class="bi bi-exclamation-triangle-fill"></i> Needs Attention</button>
+          <button class="ptab" onclick="switchBmiTab('history')"><i class="bi bi-graph-up"></i> Trends</button>
+        </div>
+
+        <!-- Records Tab -->
+        <div id="bmi-tab-records">
+          <div class="pcard">
+            <div class="pcard-head">
+              <span class="pcard-title"><i class="bi bi-table"></i> Child BMI Records</span>
+              <div class="pcard-tools">
+                <input class="ptool-search" placeholder="🔍 Search child…" oninput="searchBmiRecords(this.value)"/>
+                <select class="ptool-select" onchange="filterBmiRecords(this.value)">
+                  <option value="">All Status</option>
+                  <option value="Severe Underweight">🔴 Severe Underweight</option>
+                  <option value="Underweight">🟠 Underweight</option>
+                  <option value="Normal">🟢 Normal</option>
+                  <option value="Overweight">🟡 Overweight</option>
+                  <option value="Obese">🟤 Obese</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="ptable">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Child Name</th><th>Age</th><th>Gender</th>
+                    <th>Height</th><th>Weight</th><th>BMI</th>
+                    <th>Status</th><th>AI Rec.</th><th>Date</th><th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bmi-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calculator Tab -->
+        <div id="bmi-tab-calculator" style="display:none">
+          <div class="row g-4">
+            <div class="col-xl-5">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title"><i class="bi bi-calculator-fill"></i> BMI Calculator</span>
+                </div>
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="plabel">Select Existing Child</label>
+                    <select class="pselect" id="calc-child" onchange="autoFillCalc(this.value)">
+                      <option value="">Choose a child…</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="plabel">Child Name *</label>
+                    <input class="pinput" id="calc-name" placeholder="Full name"/>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="plabel">Age (yrs) *</label>
+                    <input class="pinput" type="number" id="calc-age" placeholder="e.g. 5" min="0" max="12"/>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="plabel">Gender *</label>
+                    <select class="pselect" id="calc-gender">
+                      <option value="">—</option>
+                      <option>Male</option>
+                      <option>Female</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="plabel">Height (cm) *</label>
+                    <input class="pinput" type="number" id="calc-height" placeholder="e.g. 100" min="40" max="200" oninput="liveCalcBmi()"/>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="plabel">Weight (kg) *</label>
+                    <input class="pinput" type="number" id="calc-weight" placeholder="e.g. 15" min="3" max="80" oninput="liveCalcBmi()"/>
+                  </div>
+                  <div class="col-12">
+                    <label class="plabel">Measurement Date</label>
+                    <input class="pinput" type="date" id="calc-date"/>
+                  </div>
+                  <div class="col-12" id="calc-live-preview" style="display:none">
+                    <div class="bmi-live-box">
+                      <div class="bmi-live-label">Live BMI Preview</div>
+                      <div class="bmi-gauge-num" id="calc-bmi-preview">—</div>
+                      <div id="calc-cat-preview" class="bmi-live-cat">—</div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <button class="btn-submit" style="width:100%;justify-content:center" onclick="calculateAndSaveBmi()">
+                      <i class="bi bi-robot"></i> Calculate BMI &amp; Get AI Recommendations
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-7">
+              <div id="bmi-result-panel">
+                <div class="pcard bmi-empty-panel">
+                  <div style="font-size:60px">🤖</div>
+                  <div style="font-size:16px;font-weight:700;margin-top:12px">Enter child details and click Calculate</div>
+                  <div style="font-size:13px;margin-top:6px">AI will generate personalized nutrition recommendations</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Critical Tab -->
+        <div id="bmi-tab-critical" style="display:none">
+          <div class="row g-4">
+            <div class="col-xl-6">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title" style="color:#991B1B">
+                    <i class="bi bi-exclamation-triangle-fill" style="color:#EF4444"></i> Severe Underweight
+                  </span>
+                </div>
+                <div id="bmi-critical-severe"></div>
+              </div>
+            </div>
+            <div class="col-xl-6">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title" style="color:#92400E">
+                    <i class="bi bi-exclamation-circle-fill" style="color:#F59E0B"></i> Underweight
+                  </span>
+                </div>
+                <div id="bmi-critical-under"></div>
+              </div>
+            </div>
+            <div class="col-xl-6">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title" style="color:#854D0E">
+                    <i class="bi bi-arrow-up-circle-fill" style="color:#EAB308"></i> Overweight
+                  </span>
+                </div>
+                <div id="bmi-critical-over"></div>
+              </div>
+            </div>
+            <div class="col-xl-6">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title" style="color:#9A3412">
+                    <i class="bi bi-shield-exclamation" style="color:#F97316"></i> Obese
+                  </span>
+                </div>
+                <div id="bmi-critical-obese"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trends Tab -->
+        <div id="bmi-tab-history" style="display:none">
+          <div class="row g-4">
+            <div class="col-xl-8">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title"><i class="bi bi-graph-up"></i> BMI Timeline</span>
+                </div>
+                <div class="bmi-timeline" id="bmi-timeline"></div>
+              </div>
+            </div>
+            <div class="col-xl-4">
+              <div class="pcard">
+                <div class="pcard-head">
+                  <span class="pcard-title"><i class="bi bi-pie-chart-fill"></i> Distribution</span>
+                </div>
+                <div id="bmi-distribution"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /bmi -->
+
+      <!-- BMI Add Modal -->
+      <div class="modal fade" id="bmiModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content pmodal">
+            <div class="modal-header pmodal-head" style="background:linear-gradient(135deg,#059669,#047857)">
+              <h5 class="modal-title"><i class="bi bi-heart-pulse-fill"></i> Add BMI Record</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="plabel">Select Existing Child (optional)</label>
+                  <select class="pselect" id="bm-child-sel" onchange="prefillBmiModal(this.value)">
+                    <option value="">— Enter manually below —</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Child Name *</label>
+                  <input class="pinput" id="bm-name-in" placeholder="Full name of child"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="plabel">Age (years) *</label>
+                  <input class="pinput" type="number" id="bm-age-in" placeholder="e.g. 5" min="0" max="12"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="plabel">Gender *</label>
+                  <select class="pselect" id="bm-gender-in">
+                    <option value="">Select…</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Height (cm) *</label>
+                  <input class="pinput" type="number" id="bm-height-in" placeholder="e.g. 100" oninput="modalLiveBmi()"/>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Weight (kg) *</label>
+                  <input class="pinput" type="number" id="bm-weight-in" placeholder="e.g. 15" oninput="modalLiveBmi()"/>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Measurement Date</label>
+                  <input class="pinput" type="date" id="bm-date-in"/>
+                </div>
+                <div class="col-md-6" id="bm-bmi-preview-wrap" style="display:none">
+                  <label class="plabel">Calculated BMI</label>
+                  <div class="bmi-preview-row">
+                    <span id="bm-bmi-preview" class="bmi-preview-num">—</span>
+                    <span id="bm-cat-preview" class="bmi-preview-cat">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer pmodal-foot">
+              <button class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+              <button class="btn-submit" style="background:linear-gradient(135deg,#059669,#047857)" onclick="saveBmiRecord()">
+                <i class="bi bi-robot"></i> Save &amp; Get AI Recommendation
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Recommendation Modal -->
+      <div class="modal fade" id="aiRecModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content pmodal">
+            <div class="modal-header pmodal-head" style="background:linear-gradient(135deg,#6C63FF,#8B5CF6)">
+              <h5 class="modal-title" id="ai-modal-title">
+                <i class="bi bi-robot"></i> AI Nutrition Recommendation
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="ai-modal-body"></div>
+            <div class="modal-footer pmodal-foot">
+              <button class="btn-cancel" data-bs-dismiss="modal">Close</button>
+              <button class="btn-submit" onclick="window.print()">
+                <i class="bi bi-printer-fill"></i> Print
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ BENEFICIARIES ══════════════ -->
+      <div class="page" id="page-beneficiary">
+        <div class="page-head">
+          <div>
+            <h1 class="ph-title">🤱 Beneficiaries</h1>
+            <p class="ph-sub">Manage pregnant women and lactating mothers enrolled at the center.</p>
+          </div>
+          <div class="ph-actions">
+            <button class="btn-pdf" onclick="downloadBenefPdf()">
+              <i class="bi bi-file-earmark-pdf-fill"></i> PDF
+            </button>
+            <button class="btn-ph" onclick="openBenefModal()">
+              <i class="bi bi-person-plus-fill"></i> Add Beneficiary
+            </button>
+          </div>
+        </div>
+        <div class="tab-row">
+          <button class="ptab active" onclick="filterBenef('all')"><i class="bi bi-people-fill"></i> All</button>
+          <button class="ptab" onclick="filterBenef('Pregnant Woman')"><i class="bi bi-heart-pulse-fill"></i> Pregnant Women</button>
+          <button class="ptab" onclick="filterBenef('Lactating Mother')"><i class="bi bi-person-heart"></i> Lactating Mothers</button>
+        </div>
+        <div class="stat-cards-row" id="benef-stats"></div>
+        <div class="pcard">
+          <div class="pcard-head">
+            <span class="pcard-title"><i class="bi bi-table"></i> Beneficiaries List</span>
+            <input class="ptool-search" placeholder="🔍 Search…" oninput="searchBenef(this.value)"/>
+          </div>
+          <div class="table-responsive">
+            <table class="ptable">
+              <thead>
+                <tr><th>#</th><th>Name</th><th>Category</th><th>Mobile</th><th>Address</th><th>Enrolled</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="benef-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /beneficiary -->
+
+      <!-- Beneficiary Modal -->
+      <div class="modal fade" id="benefModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content pmodal">
+            <div class="modal-header pmodal-head">
+              <h5 class="modal-title"><i class="bi bi-person-heart"></i> Add / Edit Beneficiary</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="plabel">Full Name *</label>
+                  <input class="pinput" id="bm-name" placeholder="Beneficiary full name"/>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Category *</label>
+                  <select class="pselect" id="bm-cat">
+                    <option>Pregnant Woman</option>
+                    <option>Lactating Mother</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Mobile</label>
+                  <input class="pinput" id="bm-mobile" placeholder="10-digit mobile number"/>
+                </div>
+                <div class="col-md-6">
+                  <label class="plabel">Husband Name</label>
+                  <input class="pinput" id="bm-husband" placeholder="Husband's name"/>
+                </div>
+                <div class="col-12">
+                  <label class="plabel">Address</label>
+                  <input class="pinput" id="bm-addr" placeholder="Village / Ward address"/>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer pmodal-foot">
+              <button class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+              <button class="btn-submit" onclick="saveBenef()">
+                <i class="bi bi-check-circle-fill"></i> Save Beneficiary
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ DIGITAL STORY BOOKS ══════════════ -->
+      <div class="page" id="page-stories">
+        <div class="page-head">
+          <div>
+            <h1 class="ph-title">📚 Digital Story Library</h1>
+            <p class="ph-sub">Stories shared by all centers — add a URL link, upload a PDF or Video, or write a text story.</p>
+          </div>
+          <button class="btn-ph" onclick="openStoryModal()">
+            <i class="bi bi-plus-circle-fill"></i> Add Story
+          </button>
+        </div>
+
+        <!-- Language filter tabs -->
+        <div class="tab-row">
+          <button class="ptab active" id="stab-all"     onclick="filterStories('all')"><i class="bi bi-grid-fill"></i> All</button>
+          <button class="ptab"        id="stab-english" onclick="filterStories('English')"><i class="bi bi-translate"></i> English</button>
+          <button class="ptab"        id="stab-telugu"  onclick="filterStories('Telugu')"><i class="bi bi-alphabet"></i> Telugu</button>
+          <button class="ptab"        id="stab-hindi"   onclick="filterStories('Hindi')"><i class="bi bi-alphabet-uppercase"></i> Hindi</button>
+        </div>
+
+        <!-- Search + filters -->
+        <div class="filter-bar" style="flex-wrap:wrap;gap:10px;">
+          <input class="ptool-search" id="story-search-input" placeholder="🔍 Search stories…" oninput="searchStories(this.value)" style="max-width:240px"/>
+          <select class="ptool-select" id="story-cat-filter" onchange="filterStoriesCat(this.value)" style="max-width:180px">
+            <option value="">All Categories</option>
+            <option>Moral Stories</option>
+            <option>Telugu Stories</option>
+            <option>Funny Stories</option>
+            <option>Nature &amp; Animals</option>
+            <option>Rhymes &amp; Songs</option>
+          </select>
+          <!-- Content-type filter chips -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button class="ptab active" id="ctype-all"   onclick="filterStoryType('all')"   style="font-size:12px;padding:6px 14px"><i class="bi bi-collection-fill"></i> All Types</button>
+            <button class="ptab"        id="ctype-url"   onclick="filterStoryType('url')"   style="font-size:12px;padding:6px 14px"><i class="bi bi-link-45deg"></i> Links</button>
+            <button class="ptab"        id="ctype-video" onclick="filterStoryType('video')" style="font-size:12px;padding:6px 14px"><i class="bi bi-play-circle-fill"></i> Videos</button>
+            <button class="ptab"        id="ctype-pdf"   onclick="filterStoryType('pdf')"   style="font-size:12px;padding:6px 14px"><i class="bi bi-file-earmark-pdf-fill"></i> PDFs</button>
+            <button class="ptab"        id="ctype-text"  onclick="filterStoryType('text')"  style="font-size:12px;padding:6px 14px"><i class="bi bi-file-text-fill"></i> Text</button>
+          </div>
+        </div>
+
+        <div class="story-grid" id="story-grid"></div>
+      </div><!-- /stories -->
+
+      <!-- ── Story Upload Modal ── -->
+      <div class="modal fade" id="storyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+          <div class="modal-content pmodal">
+            <div class="modal-header pmodal-head">
+              <h5 class="modal-title"><i class="bi bi-plus-circle-fill"></i> Add New Story</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row g-3">
+                <!-- Basic info -->
+                <div class="col-md-8">
+                  <label class="plabel">Story Title *</label>
+                  <input class="pinput" id="sm-title" placeholder="Enter story title"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="plabel">Emoji / Icon</label>
+                  <input class="pinput" id="sm-emoji" placeholder="e.g. 🦁" maxlength="4"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="plabel">Language *</label>
+                  <select class="pselect" id="sm-lang">
+                    <option>English</option>
+                    <option>Telugu</option>
+                    <option>Hindi</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="plabel">Category</label>
+                  <select class="pselect" id="sm-cat">
+                    <option>Moral Stories</option>
+                    <option>Telugu Stories</option>
+                    <option>Funny Stories</option>
+                    <option>Nature &amp; Animals</option>
+                    <option>Rhymes &amp; Songs</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="plabel">Visible to</label>
+                  <select class="pselect" id="sm-global">
+                    <option value="true">All users (Global)</option>
+                    <option value="false">My center only</option>
+                  </select>
+                </div>
+
+                <!-- Content type selector -->
+                <div class="col-12">
+                  <label class="plabel">Content Type *</label>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+                    <label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 18px;border:2px solid var(--border);border-radius:10px;font-weight:600;transition:all .2s" id="ct-label-url">
+                      <input type="radio" name="sm-ctype" value="url"   id="ct-url"   onchange="onStoryTypeChange()" style="display:none">
+                      <i class="bi bi-link-45deg" style="font-size:18px;color:#6366f1"></i> URL / Link
+                    </label>
+                    <label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 18px;border:2px solid var(--border);border-radius:10px;font-weight:600;transition:all .2s" id="ct-label-video">
+                      <input type="radio" name="sm-ctype" value="video" id="ct-video" onchange="onStoryTypeChange()" style="display:none">
+                      <i class="bi bi-play-circle-fill" style="font-size:18px;color:#ef4444"></i> Video
+                    </label>
+                    <label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 18px;border:2px solid var(--border);border-radius:10px;font-weight:600;transition:all .2s" id="ct-label-pdf">
+                      <input type="radio" name="sm-ctype" value="pdf"   id="ct-pdf"   onchange="onStoryTypeChange()" style="display:none">
+                      <i class="bi bi-file-earmark-pdf-fill" style="font-size:18px;color:#f97316"></i> PDF File
+                    </label>
+                    <label style="cursor:pointer;display:flex;align-items:center;gap:6px;padding:10px 18px;border:2px solid var(--border);border-radius:10px;font-weight:600;transition:all .2s" id="ct-label-text">
+                      <input type="radio" name="sm-ctype" value="text"  id="ct-text"  onchange="onStoryTypeChange()" style="display:none" checked>
+                      <i class="bi bi-file-text-fill" style="font-size:18px;color:#22c55e"></i> Text / Notes
+                    </label>
+                  </div>
+                </div>
+
+                <!-- URL input section -->
+                <div class="col-12" id="ct-section-url" style="display:none">
+                  <div style="background:rgba(99,102,241,.07);border:1.5px solid rgba(99,102,241,.25);border-radius:12px;padding:16px">
+                    <label class="plabel"><i class="bi bi-link-45deg" style="color:#6366f1"></i> Story URL / Link *</label>
+                    <input class="pinput" id="sm-url-link" placeholder="https://www.example.com/story or YouTube URL"/>
+                    <div style="font-size:12px;color:var(--text-s);margin-top:6px"><i class="bi bi-info-circle"></i> Paste any link — YouTube, website, Google Drive, etc. Users will be redirected to this URL.</div>
+                  </div>
+                </div>
+
+                <!-- Video section -->
+                <div class="col-12" id="ct-section-video" style="display:none">
+                  <div style="background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.25);border-radius:12px;padding:16px">
+                    <label class="plabel"><i class="bi bi-play-circle-fill" style="color:#ef4444"></i> Video Content *</label>
+                    <div style="margin-bottom:12px">
+                      <label class="plabel" style="font-size:12px;margin-bottom:4px">Paste YouTube / Video URL</label>
+                      <input class="pinput" id="sm-youtube-url" placeholder="https://www.youtube.com/watch?v=... or direct video URL"/>
+                    </div>
+                    <div style="text-align:center;color:var(--text-s);margin:10px 0;font-size:13px">— OR upload a video file (MP4, WebM, AVI, MOV — max 100MB) —</div>
+                    <div class="upload-drop-zone" id="video-drop-zone" onclick="document.getElementById('sm-video-file').click()" ondragover="event.preventDefault()" ondrop="handleFileDrop(event,'video')">
+                      <i class="bi bi-cloud-arrow-up-fill" style="font-size:32px;color:#ef4444"></i>
+                      <div style="font-weight:700;margin-top:8px">Click or drag video file here</div>
+                      <div style="font-size:12px;color:var(--text-s)">MP4 · WebM · AVI · MOV (max 100MB)</div>
+                    </div>
+                    <input type="file" id="sm-video-file" accept=".mp4,.webm,.avi,.mov,.mkv" style="display:none" onchange="handleFileSelect(event,'video')"/>
+                    <div id="sm-video-url-hidden" style="display:none"></div>
+                    <div id="video-upload-status" style="margin-top:8px;font-size:13px;display:none"></div>
+                  </div>
+                </div>
+
+                <!-- PDF section -->
+                <div class="col-12" id="ct-section-pdf" style="display:none">
+                  <div style="background:rgba(249,115,22,.07);border:1.5px solid rgba(249,115,22,.25);border-radius:12px;padding:16px">
+                    <label class="plabel"><i class="bi bi-file-earmark-pdf-fill" style="color:#f97316"></i> PDF File *</label>
+                    <div style="margin-bottom:12px">
+                      <label class="plabel" style="font-size:12px;margin-bottom:4px">Paste PDF URL (Google Drive, OneDrive, etc.)</label>
+                      <input class="pinput" id="sm-pdf-url-direct" placeholder="https://drive.google.com/file/d/... or direct PDF URL"/>
+                    </div>
+                    <div style="text-align:center;color:var(--text-s);margin:10px 0;font-size:13px">— OR upload a PDF file (max 10MB) —</div>
+                    <div class="upload-drop-zone" id="pdf-drop-zone" onclick="document.getElementById('sm-pdf-file').click()" ondragover="event.preventDefault()" ondrop="handleFileDrop(event,'pdf')">
+                      <i class="bi bi-file-earmark-pdf-fill" style="font-size:32px;color:#f97316"></i>
+                      <div style="font-weight:700;margin-top:8px">Click or drag PDF file here</div>
+                      <div style="font-size:12px;color:var(--text-s)">PDF (max 10MB)</div>
+                    </div>
+                    <input type="file" id="sm-pdf-file" accept=".pdf" style="display:none" onchange="handleFileSelect(event,'pdf')"/>
+                    <div id="sm-pdf-url-hidden" style="display:none"></div>
+                    <div id="pdf-upload-status" style="margin-top:8px;font-size:13px;display:none"></div>
+                  </div>
+                </div>
+
+                <!-- Preview text (always shown) -->
+                <div class="col-12">
+                  <label class="plabel">Description / Preview Text</label>
+                  <textarea class="pinput" id="sm-preview" rows="3" placeholder="Write a short description of this story (shown on the card)…"></textarea>
+                </div>
+
+                <!-- Optional Audio Narration -->
+                <div class="col-12">
+                  <label class="plabel"><i class="bi bi-volume-up-fill" style="color:var(--primary)"></i> Optional Audio Narration</label>
+                  <div style="background:rgba(99,102,241,.04);border:1.5px dashed rgba(99,102,241,.2);border-radius:12px;padding:12px;text-align:center">
+                    <div class="upload-drop-zone" id="audio-drop-zone" onclick="document.getElementById('sm-audio-file').click()" ondragover="event.preventDefault()" ondrop="handleFileDrop(event,'audio')" style="padding:16px;border:none;background:transparent;cursor:pointer">
+                      <i class="bi bi-mic-fill" style="font-size:24px;color:var(--primary)"></i>
+                      <div style="font-weight:600;margin-top:4px">Upload Audio File (MP3/WAV)</div>
+                      <div style="font-size:11px;color:var(--text-s)">Max 20MB</div>
+                    </div>
+                    <input type="file" id="sm-audio-file" accept=".mp3,.wav" style="display:none" onchange="handleFileSelect(event,'audio')"/>
+                    <div id="sm-audio-url-hidden" style="display:none"></div>
+                    <div id="audio-upload-status" style="margin-top:8px;font-size:13px;display:none"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer pmodal-foot">
+              <button class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
+              <button class="btn-submit" id="sm-save-btn" onclick="saveStory()">
+                <i class="bi bi-upload"></i> <span id="sm-save-label">Add Story</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Story Viewer Modal ── -->
+      <div class="modal fade" id="storyViewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+          <div class="modal-content pmodal">
+            <div class="modal-header pmodal-head">
+              <h5 class="modal-title" id="sv-title">Story</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="sv-body" style="padding:0;min-height:400px"></div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ══════════════ REPORTS ══════════════ -->
+      <div class="page" id="page-reports">
+        <div class="page-head">
+          <div>
+            <h1 class="ph-title">📊 Reports</h1>
+            <p class="ph-sub">Generate and download professional PDF reports for all modules.</p>
+          </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stat-cards-row" id="report-stats"></div>
+
+        <!-- Report Cards Grid -->
+        <div class="row g-4" id="report-cards-grid">
+          <!-- Stock Management -->
+          <div class="col-md-6 col-xl-4">
+            <div class="pcard report-card">
+              <div class="report-card-icon bg-o"><i class="bi bi-box-seam-fill col-o" style="font-size:28px"></i></div>
+              <div class="report-card-title">Stock Management Report</div>
+              <div class="report-card-desc">Current inventory levels, remaining stock, and status for all items.</div>
+              <div class="report-card-actions">
+                <button class="btn-ph btn-ph-outline" onclick="previewReport('stock')"><i class="bi bi-eye-fill"></i> Preview</button>
+                <button class="btn-pdf" onclick="triggerReportGenerate('stock')"><i class="bi bi-file-earmark-pdf-fill"></i> Download PDF</button>
+              </div>
+            </div>
+          </div>
+          <!-- Stock Distribution -->
+          <div class="col-md-6 col-xl-4">
+            <div class="pcard report-card">
+              <div class="report-card-icon bg-g"><i class="bi bi-arrow-right-circle-fill col-g" style="font-size:28px"></i></div>
+              <div class="report-card-title">Stock Distribution Report</div>
+              <div class="report-card-desc">Complete history of all stock distributions with dates and details.</div>
+              <div class="report-card-actions">
+                <button class="btn-ph btn-ph-outline" onclick="previewReport('dist')"><i class="bi bi-eye-fill"></i> Preview</button>
+                <button class="btn-pdf" onclick="triggerReportGenerate('distribution')"><i class="bi bi-file-earmark-pdf-fill"></i> Download PDF</button>
+              </div>
+            </div>
+          </div>
+          <!-- Child Report -->
+          <div class="col-md-6 col-xl-4">
+            <div class="pcard report-card">
+              <div class="report-card-icon bg-p"><i class="bi bi-people-fill col-p" style="font-size:28px"></i></div>
+              <div class="report-card-title">Child Report</div>
+              <div class="report-card-desc">All enrolled children with parent details, age and gender breakdown.</div>
+              <div class="report-card-actions">
+                <button class="btn-ph btn-ph-outline" onclick="previewReport('children')"><i class="bi bi-eye-fill"></i> Preview</button>
+                <button class="btn-pdf" onclick="triggerReportGenerate('children')"><i class="bi bi-file-earmark-pdf-fill"></i> Download PDF</button>
+              </div>
+            </div>
+          </div>
+          <!-- Attendance Report -->
+          <div class="col-md-6 col-xl-4">
+            <div class="pcard report-card">
+              <div class="report-card-icon bg-info"><i class="bi bi-calendar-check-fill text-info" style="font-size:28px"></i></div>
+              <div class="report-card-title">Attendance Report</div>
+              <div class="report-card-desc">Complete history of child attendance rates and daily logs.</div>
+              <div class="report-card-actions">
+                <button class="btn-ph btn-ph-outline" onclick="previewReport('attendance')"><i class="bi bi-eye-fill"></i> Preview</button>
+                <button class="btn-pdf" onclick="triggerReportGenerate('attendance')"><i class="bi bi-file-earmark-pdf-fill"></i> Download PDF</button>
+              </div>
+            </div>
+          </div>
+          <!-- BMI Report -->
+          <div class="col-md-6 col-xl-4">
+            <div class="pcard report-card">
+              <div class="report-card-icon bg-v"><i class="bi bi-heart-pulse-fill col-v" style="font-size:28px"></i></div>
+              <div class="report-card-title">BMI Report</div>
+              <div class="report-card-desc">BMI values, nutrition status and recommendations for all children.</div>
+              <div class="report-card-actions">
+                <button class="btn-ph btn-ph-outline" onclick="previewReport('bmi')"><i class="bi bi-eye-fill"></i> Preview</button>
+                <button class="btn-pdf" onclick="triggerReportGenerate('bmi')"><i class="bi bi-file-earmark-pdf-fill"></i> Download PDF</button>
+              </div>
+            </div>
+          </div>
+          <!-- Beneficiaries Report -->
+          <div class="col-md-6 col-xl-4">
+            <div class="pcard report-card">
+              <div class="report-card-icon bg-pk"><i class="bi bi-person-heart col-pk" style="font-size:28px"></i></div>
+              <div class="report-card-title">Beneficiaries Report</div>
+              <div class="report-card-desc">Pregnant women and lactating mothers registered at the center.</div>
+              <div class="report-card-actions">
+                <button class="btn-ph btn-ph-outline" onclick="previewReport('benef')"><i class="bi bi-eye-fill"></i> Preview</button>
+                <button class="btn-pdf" onclick="triggerReportGenerate('beneficiary')"><i class="bi bi-file-earmark-pdf-fill"></i> Download PDF</button>
+              </div>
+            </div>
+          </div>
+          <!-- Village Survey Report -->
+          <div class="col-md-6 col-xl-4">
+            <div class="pcard report-card">
+              <div class="report-card-icon bg-y"><i class="bi bi-file-earmark-bar-graph-fill col-y" style="font-size:28px"></i></div>
+              <div class="report-card-title">Village Survey Report</div>
+              <div class="report-card-desc">Village demographic logs, families, and population tracking.</div>
+              <div class="report-card-actions">
+                <button class="btn-ph btn-ph-outline" onclick="previewReport('survey')"><i class="bi bi-eye-fill"></i> Preview</button>
+                <button class="btn-pdf" onclick="triggerReportGenerate('survey')"><i class="bi bi-file-earmark-pdf-fill"></i> Download PDF</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generated Reports History Log Table -->
+        <div class="pcard mt-4">
+          <div class="pcard-head">
+            <span class="pcard-title"><i class="bi bi-clock-history"></i> Generated Reports History Log</span>
+          </div>
+          <div class="table-responsive">
+            <table class="ptable">
+              <thead>
+                <tr>
+                  <th>Date Generated</th>
+                  <th>Report Type</th>
+                  <th>Generated By</th>
+                  <th>Download Link</th>
+                </tr>
+              </thead>
+              <tbody id="reports-history-tbody">
+                <tr>
+                  <td colspan="4" class="text-center" style="padding:28px;color:var(--text-s)">No reports generated yet. Click Download PDF on any report above.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /reports -->
+
+      <!-- Report Preview Modal -->
+      <div class="modal fade" id="reportPreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content pmodal">
+            <div class="modal-header pmodal-head">
+              <h5 class="modal-title"><i class="bi bi-eye-fill"></i> Report Preview</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="rpt-preview-body"></div>
+            <div class="modal-footer pmodal-foot">
+              <button class="btn-cancel" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-area -->
+</div><!-- /portal-wrap -->
+
+<!-- Toast Notifications -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
