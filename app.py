@@ -16,7 +16,7 @@ import base64
 import bcrypt
 import jwt
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, g, send_file
+from flask import Flask, request, jsonify, g, send_file, send_from_directory
 from flask_cors import CORS
 from supabase import create_client, Client
 
@@ -175,7 +175,15 @@ def auth_required(f):
 
 @app.route("/", methods=["GET"])
 def root():
-    return ok({"name": "Smart Anganwadi Portal API", "version": "3.0"})
+    return send_from_directory(".", "index.html")
+
+@app.route("/styles.css", methods=["GET"])
+def serve_css():
+    return send_from_directory(".", "styles.css")
+
+@app.route("/script.js", methods=["GET"])
+def serve_js():
+    return send_from_directory(".", "script.js")
 
 @app.route("/api/health", methods=["GET"])
 def health():

@@ -89,7 +89,9 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── API HELPER ──────────────────────────────────────────────────
-const API_URL = 'http://localhost:5000/api';
+const API_URL = window.location.protocol === 'file:' 
+  ? 'http://localhost:5000/api' 
+  : window.location.origin + '/api';
 
 async function apiFetch(endpoint, options = {}) {
   const token = localStorage.getItem('token');
