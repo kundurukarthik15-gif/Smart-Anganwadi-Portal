@@ -77,9 +77,13 @@ def main():
             print("   git config --global user.email \"you@example.com\"")
             sys.exit(1)
     
+    # Ensure the branch is named 'main' (standard for GitHub)
+    run_git_command(["branch", "-M", "main"])
+    current_branch = "main"
+
     # 6. Git push
     print(f"\nPushing to GitHub on branch '{current_branch}'...")
-    if run_git_command(["push", "origin", current_branch]):
+    if run_git_command(["push", "-u", "origin", current_branch]):
         print("\n🚀 Code successfully pushed to GitHub!")
     else:
         print("\n❌ Failed to push. If this is the first push for this branch, you may need to set the upstream:")

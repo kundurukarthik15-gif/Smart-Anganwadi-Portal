@@ -2945,6 +2945,23 @@ def api_diagnose():
         }), 500
 
 
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_static(path):
+    if path.startswith("api"):
+        return jsonify({"success": False, "message": f"API endpoint not found: /{path}"}), 404
+        
+    # Standardize path
+    safe_path = path.strip("/")
+    if not safe_path:
+        return send_from_directory(".", "index.html")
+        
+    if os.path.exists(os.path.join(".", safe_path)):
+        return send_from_directory(".", safe_path)
+        
+    return send_from_directory(".", "index.html")
+
+
 # ================================================================
 #  ENTRYPOINT
 # ================================================================
