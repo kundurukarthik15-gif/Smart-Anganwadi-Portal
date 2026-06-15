@@ -1,0 +1,120 @@
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-password').value;
+  const err   = document.getElementById('login-err');
+
+  if (!email || !pass) { showErr('login-err', '⚠️ Please enter your email and password.'); return; }
+
+  // Temporarily show loading text
+  const btn = document.querySelector('#login-form .btn-login-submit') || document.querySelector('.btn-login');
+  const originalText = btn ? btn.innerHTML : 'Signing in...';
+  if (btn) {
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+    btn.disabled = true;
+  }
+
+  const res = await apiFetch('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password: pass })
+  });
+
+  if (btn) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+
+  if (res.success) {
+    err.style.display = 'none';
+    localStorage.setItem('token', res.data.token);
+    
+    // Map backend user to local DB user format for compatibility
+    DB.user = { 
+        id: res.data.user.id,
+        email: res.data.user.email, 
+        name: res.data.user.full_name, 
+        center: res.data.center.center_name || 'Anganwadi Center', 
+        center_id: res.data.user.center_id,
+        village: res.data.center.village || '', 
+        mandal: res.data.center.mandal || '', 
+        district: res.data.center.district || '', 
+        role: 'Staff' 
+    };
+    
+    openPortal();
+  } else {
+    if (res.status === 403) {
+      showErr('login-err', 'Please verify your email address before accessing the portal.');
+    } else {
+      showErr('login-err', `❌ ${res.message}`);
+    }
+  }
+}
+
+function showRegister() {
+  document.getElementById('login-form').style.display    = 'none';
+  document.getElementById('register-form').style.display = '';
+  document.getElementById('forgot-password-form').style.display = 'none';
+  document.getElementById('registration-success-view').style.display = 'none';
+  document.getElementById('reg-err').style.display = 'none';
+}
+
+function backToLogin() {
+  document.getElementById('register-form').style.display = 'none';
+  document.getElementById('login-form').style.display    = '';
+}
+
+function showForgotPassword() {
+  document.getElementById('login-form').style.display = 'none';
+  document.getElementById('forgot-password-form').style.display = 'block';
+  document.getElementById('forgot-err').style.display = 'none';
+}
+
+function backToLoginFromForgot() {
+  document.getElementById('forgot-password-form').style.display = 'none';
+  document.getElementById('login-form').style.display = 'block';
+}
+
+function backToLoginFromSuccess() {
+  document.getElementById('registration-success-view').style.display = 'none';
+  document.getElementById('login-form').style.display = 'block';
+}
+
+async function doForgotPassword() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const err = document.getElementById('forgot-err');
+  
+  if (!email) {
+    showErr('forgot-err', '⚠️ Please enter your email address.');
+    return;
+  }
+  
+  const btn = document.querySelector('#forgot-password-form .btn-login-submit');
+  const origText = btn ? btn.innerHTML : 'Send Reset Link';
+  if (btn) {
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+    btn.disabled = true;
+  }
+  
+  const res = await apiFetch('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email })
+  });
+  
+  if (btn) {
+    btn.innerHTML = origText;
+    btn.disabled = false;
+  }
+  
+  if (res.success) {
+    toast('✅ Password reset email sent successfully.', 'success');
+    backToLoginFromForgot();
+  } else {
+    showErr('forgot-err', `❌ ${res.message}`);
+  }
+}
+
+async function doRegister() {
+  const name  = document.getElementById('reg-fullname').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('reg-password').value;
+  const pass2 = document.getElementById('reg-password-confirm').value;
