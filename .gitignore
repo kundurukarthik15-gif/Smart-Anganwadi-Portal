@@ -1,0 +1,19 @@
+# Environments
+.env
+.venv/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# VS Code
+.vscode/
+
+# Ignore SQLite databases if any exist
+*.sqlite3
+*.db
