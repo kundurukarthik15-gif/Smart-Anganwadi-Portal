@@ -166,12 +166,20 @@ def verify_supabase_token(token):
         # Call the official Supabase client to get the user from the JWT
         res = supabase.auth.get_user(token)
         if res and res.user:
+            # Defensive date parsing helper
+            def parse_date(val):
+                if not val:
+                    return None
+                if hasattr(val, "isoformat"):
+                    return val.isoformat()
+                return str(val)
+
             # Convert user object to dictionary format matching the rest of the code
             user_dict = {
                 "id": res.user.id,
                 "email": res.user.email,
-                "email_confirmed_at": res.user.email_confirmed_at.isoformat() if res.user.email_confirmed_at else None,
-                "confirmed_at": res.user.confirmed_at.isoformat() if res.user.confirmed_at else None,
+                "email_confirmed_at": parse_date(res.user.email_confirmed_at),
+                "confirmed_at": parse_date(res.user.confirmed_at),
                 "user_metadata": res.user.user_metadata or {}
             }
             # Cache the successfully verified token for 10 minutes
