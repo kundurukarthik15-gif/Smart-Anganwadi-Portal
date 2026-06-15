@@ -47,13 +47,13 @@
 
 /* ── RESET & BASE ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; font-size: 18px; }
+html { scroll-behavior: smooth; font-size: 16px; }
 
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background: var(--bg);
   color: var(--text-d);
-  font-size: 17px;
+  font-size: 14px;
   min-height: 100vh;
   line-height: 1.6;
   overflow-x: hidden;
