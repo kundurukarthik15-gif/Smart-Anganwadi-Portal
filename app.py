@@ -2945,6 +2945,85 @@ def api_diagnose():
         }), 500
 
 
+@app.route("/api/dev/test-token", methods=["GET"])
+def test_token():
+    token = request.args.get("token")
+    if not token:
+        return jsonify({"success": False, "message": "Token query parameter is required"}), 400
+    
+    results = {}
+    try:
+        # 1. Attempt using supabase.auth.get_user(token)
+        try:
+            res = supabase.auth.get_user(token)
+            if res and res.user:
+                results["supabase_sdk"] = {
+                    "success": True,
+                    "user_id": res.user.id,
+                    "email": res.user.email,
+                    "user_metadata": res.user.user_metadata
+                }
+            else:
+                results["supabase_sdk"] = {
+                    "success": False,
+                    "message": "Returned empty user"
+                }
+        except Exception as e:
+            import traceback
+            results["supabase_sdk"] = {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }
+            
+        # 2. Attempt using raw urllib to rule out SDK issues
+        try:
+            import urllib.request
+            import urllib.error
+            import ssl
+            import json
+            
+            url = f"{SUPABASE_URL}/auth/v1/user"
+            req = urllib.request.Request(url)
+            req.add_header("Authorization", f"Bearer {token}")
+            req.add_header("apikey", SUPABASE_KEY)
+            
+            context = ssl._create_unverified_context()
+            with urllib.request.urlopen(req, context=context, timeout=10) as response:
+                body = response.read().decode("utf-8")
+                results["urllib"] = {
+                    "success": True,
+                    "status": response.status,
+                    "data": json.loads(body)
+                }
+        except urllib.error.HTTPError as e:
+            results["urllib"] = {
+                "success": False,
+                "status": e.code,
+                "error": e.read().decode("utf-8")
+            }
+        except Exception as e:
+            import traceback
+            results["urllib"] = {
+                "success": False,
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }
+            
+        return jsonify({
+            "success": True,
+            "results": results
+        })
+        
+    except Exception as e:
+        import traceback
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_static(path):

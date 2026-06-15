@@ -110,7 +110,7 @@ async function apiFetch(endpoint, options = {}) {
     const json = await res.json();
     
     // Auto logout on invalid/expired session (401 Unauthorized)
-    if (res.status === 401 && token) {
+    if (res.status === 401 && token && endpoint !== '/auth/profile') {
       console.warn("Invalid session detected. Logging out.");
       localStorage.removeItem('token');
       DB.user = null;
