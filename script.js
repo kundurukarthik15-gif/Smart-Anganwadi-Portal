@@ -485,6 +485,7 @@ async function loadInitialData() {
 }
 
 async function openPortal() {
+  document.getElementById('landing-page').style.display = 'none';
   document.getElementById('login-page').style.display   = 'none';
   document.getElementById('portal-wrap').style.display  = 'block';
 
