@@ -150,11 +150,7 @@ RESOLVED_USER_CACHE = {}
 
 
 def verify_supabase_token(token):
-    """Verify Supabase token by calling Supabase Auth API directly using urllib (no dependencies)."""
-    import urllib.request
-    import urllib.error
-    import json
-    import ssl
+    """Verify Supabase token using the official Supabase Auth client SDK."""
     from datetime import datetime, timezone, timedelta
     
     # 1. Check cache first to avoid bottleneck on parallel requests
@@ -166,28 +162,24 @@ def verify_supabase_token(token):
         else:
             TOKEN_CACHE.pop(token, None) # remove expired entry
             
-    url = f"{SUPABASE_URL}/auth/v1/user"
-    req = urllib.request.Request(url)
-    req.add_header("Authorization", f"Bearer {token}")
-    req.add_header("apikey", SUPABASE_KEY)
-    
     try:
-        # Create unverified SSL context to bypass local certificate verification issues
-        context = ssl._create_unverified_context()
-        with urllib.request.urlopen(req, context=context, timeout=10) as response:
-            if response.status == 200:
-                user_dict = json.loads(response.read().decode())
-                # Cache token successfully verified for 10 minutes
-                TOKEN_CACHE[token] = (user_dict, now + timedelta(minutes=10))
-                return user_dict
-    except urllib.error.HTTPError as e:
-        try:
-            err_body = e.read().decode()
-            logger.warning(f"Supabase token verification HTTP error {e.code}: {err_body}")
-        except Exception:
-            logger.warning(f"Supabase token verification HTTP error {e.code}")
+        # Call the official Supabase client to get the user from the JWT
+        res = supabase.auth.get_user(token)
+        if res and res.user:
+            # Convert user object to dictionary format matching the rest of the code
+            user_dict = {
+                "id": res.user.id,
+                "email": res.user.email,
+                "email_confirmed_at": res.user.email_confirmed_at.isoformat() if res.user.email_confirmed_at else None,
+                "confirmed_at": res.user.confirmed_at.isoformat() if res.user.confirmed_at else None,
+                "user_metadata": res.user.user_metadata or {}
+            }
+            # Cache the successfully verified token for 10 minutes
+            TOKEN_CACHE[token] = (user_dict, now + timedelta(minutes=10))
+            return user_dict
     except Exception as e:
-        logger.error(f"Error calling Supabase Auth API: {e}")
+        logger.error(f"Error calling supabase.auth.get_user: {e}")
+        
     return None
 
 

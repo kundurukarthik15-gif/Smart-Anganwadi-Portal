@@ -1,0 +1,60 @@
+loginWithGoogle() {
+  let redirectUrl = window.location.origin;
+  // Only force redirect to Flask server if opening the file directly (file://)
+  if (window.location.protocol === 'file:') {
+    redirectUrl = 'http://localhost:5000';
+  }
+  window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
+}
+
+
+function showAuthStatus(type, msg) {
+  const el = document.getElementById('auth-status-msg');
+  if (!el) return;
+  el.className = `auth-status-banner ${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+  // Scroll to status banner
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function checkAuthHash() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  
+  // Remove '#'
+  const params = new URLSearchParams(hash.substring(1));
+  const accessToken = params.get('access_token');
+  const type = params.get('type');
+  const errorDescription = params.get('error_description');
+  
+  if (errorDescription) {
+    window.history.replaceState(null, null, window.location.pathname);
+    showAuthStatus('error', `❌ Authentication error: ${decodeURIComponent(errorDescription.replace(/\+/g, ' '))}`);
+    showLogin();
+    return;
+  }
+  
+  if (type === 'signup' || hash.includes('type=signup')) {
+    // Email verified successfully
+    window.history.replaceState(null, null, window.location.pathname);
+    localStorage.removeItem('token');
+    showAuthStatus('success', 'Email verified successfully. You can now login.');
+    showLogin();
+    return;
+  }
+  
+  if (accessToken) {
+    // Save token, let the window load handler handle profile retrieval
+    localStorage.setItem('token', accessToken);
+    window.history.replaceState(null, null, window.location.pathname);
+  }
+}
+
+// Call hash check immediately on script execution
+checkAuthHash();
+
+// ── AUTO LOGIN & VERIFICATION ────────────────────────────────────
+window.addEventListener('load', async () => {
+  // Check hash again on load (in case of delay)
+  checkAuthHash();

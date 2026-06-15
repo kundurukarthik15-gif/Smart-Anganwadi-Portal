@@ -1,0 +1,60 @@
+// ── AUTO LOGIN & VERIFICATION ────────────────────────────────────
+window.addEventListener('load', async () => {
+  // Check hash again on load (in case of delay)
+  checkAuthHash();
+  
+  const token = localStorage.getItem('token');
+  if (token) {
+    const res = await apiFetch('/auth/profile');
+    if (res.success) {
+      DB.user = { 
+        id: res.data.id,
+        email: res.data.email, 
+        name: res.data.full_name, 
+        center: res.data.center?.center_name || 'Anganwadi Center', 
+        center_id: res.data.center_id,
+        village: res.data.center?.village || '', 
+        mandal: res.data.center?.mandal || '', 
+        district: res.data.center?.district || '', 
+        role: 'Staff' 
+      };
+      openPortal();
+    } else {
+      console.error("Profile fetch failed:", res);
+      localStorage.removeItem('token');
+      if (res.status === 403) {
+        showLogin();
+        showErr('login-err', 'Please verify your email address before accessing the portal.');
+      } else {
+        showLogin();
+        showErr('login-err', `Authentication failed: ${res.message || 'Unknown error'}`);
+      }
+    }
+  } else {
+    // If not authenticated, ensure landing is visible
+    backToLanding();
+  }
+});
+
+// ── LANDING / AUTH ──────────────────────────────────────────────
+function showLogin() {
+  document.getElementById('landing-page').style.display = 'none';
+  document.getElementById('login-page').style.display   = 'flex';
+  // Ensure correct forms are visible
+  document.getElementById('login-form').style.display = 'block';
+  document.getElementById('register-form').style.display = 'none';
+  document.getElementById('forgot-password-form').style.display = 'none';
+  document.getElementById('registration-success-view').style.display = 'none';
+}
+
+function backToLanding() {
+  document.getElementById('login-page').style.display   = 'none';
+  document.getElementById('landing-page').style.display = 'block';
+}
+
+function togglePw() {
+  const inp = document.getElementById('login-password');
+  const eye = document.getElementById('pw-eye');
+  if (inp.type === 'password') { inp.type = 'text'; eye.className = 'bi bi-eye-slash'; }
+  else { inp.type = 'password'; eye.className = 'bi bi-eye'; }
+}
