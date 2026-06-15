@@ -2929,11 +2929,17 @@ def api_diagnose():
         client = create_client(db_url, os.getenv("SUPABASE_KEY"))
         test_centers = client.table("centers").select("id").limit(1).execute()
         
+        # Query users database records
+        db_users = client.table("users")\
+            .select("email, full_name, center_id, centers(center_name)")\
+            .execute()
+        
         return jsonify({
             "success": True,
             "supabase_url": db_url,
             "supabase_key_len": db_key_len,
             "centers_data": test_centers.data,
+            "users_in_db": db_users.data,
             "message": "Supabase connection verified successfully within Flask context!"
         })
     except Exception as e:
