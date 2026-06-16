@@ -33,6 +33,9 @@
       <a href="#contact-footer" class="nav-link">Contact</a>
     </div>
     <div class="nav-actions">
+      <button class="btn-theme-toggle" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode" title="Toggle Dark Mode">
+        <i class="bi bi-moon-fill" id="dm-icon"></i>
+      </button>
       <button class="btn-nav-signin" onclick="showLogin()">Sign In</button>
     </div>
   </nav>
@@ -564,6 +567,9 @@
       </div>
       
       <div class="topbar-right">
+        <button class="btn-theme-toggle-app" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode" title="Toggle Dark Mode">
+          <i class="bi bi-moon-fill" id="dm-icon-app"></i>
+        </button>
         <!-- Hidden support elements for compatibility with load handlers -->
         <span id="tb-uname" style="display:none">Worker</span>
         <span id="tb-ucenter" style="display:none"></span>
@@ -700,8 +706,13 @@
         </div>
 
         <!-- Footer -->
-        <footer class="dash-footer text-center mt-5 py-4 border-top">
-          <p class="mb-0 text-muted" style="font-size: 13px; font-weight: 500;">&copy; 2025 Smart Anganwadi Portal. All rights reserved.</p>
+        <footer class="dash-footer">
+          <div class="dash-footer-text">&copy; 2026 Smart Anganwadi Digital Portal. All rights reserved.</div>
+          <div class="dash-footer-links">
+            <a href="https://wcd.nic.in" target="_blank" rel="noopener">Ministry of WCD</a>
+            <a href="https://poshantracker.in" target="_blank" rel="noopener">Poshan Tracker</a>
+            <a href="#" onclick="showPage('settings')">Help &amp; Settings</a>
+          </div>
         </footer>
 
       </div><!-- /dashboard -->

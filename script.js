@@ -75,6 +75,14 @@ function toggleDarkMode() {
   const isDark = document.body.classList.contains('dark-mode');
   localStorage.setItem('darkMode', isDark ? 'yes' : 'no');
   updateDarkModeIcons(isDark);
+  
+  if (window.Chart) {
+    Chart.defaults.color = isDark ? '#9CA3AF' : '#64748B';
+    Chart.defaults.borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)';
+    if (document.getElementById('page-dashboard')?.classList.contains('active')) {
+      renderDashboard();
+    }
+  }
 }
 
 function updateDarkModeIcons(isDark) {
@@ -88,6 +96,10 @@ function updateDarkModeIcons(isDark) {
 window.addEventListener('DOMContentLoaded', () => {
   const isDark = document.body.classList.contains('dark-mode');
   updateDarkModeIcons(isDark);
+  if (window.Chart) {
+    Chart.defaults.color = isDark ? '#9CA3AF' : '#64748B';
+    Chart.defaults.borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)';
+  }
 });
 
 // ── API HELPER ──────────────────────────────────────────────────
@@ -470,7 +482,7 @@ async function loadInitialData() {
     if (history.success) DB.stockHistory = history.data || [];
     if (stories.success) DB.stories = stories.data || [];
     if (meetings.success) DB.meetings = meetings.data || [];
-    if (bmi.success) DB.bmiRecords = bmi.data || [];
+    if (bmi.success) DB.bmiRecords = (bmi.data || []).map(normalizeBmi);
     if (attPhotos.success) DB.attendancePhotos = attPhotos.data || [];
     if (surveys.success) DB.villageSurveys = surveys.data || [];
     if (villagers.success) DB.villagers = villagers.data || [];
@@ -625,9 +637,7 @@ function showPage(page) {
     stock:        () => switchStockTab('inventory'),
     distribution: () => { populateDistItems(); filterDistHistory('all'); },
     children:     renderChildren,
-    attendance:   async () => {
-      const today = new Date().toISOString().split('T')[0];
-      await loadAttendanceForDate(today);
+    attendance:   () => {
       initAttendancePage();
     },
     survey:       renderSurveyPage,
@@ -762,16 +772,25 @@ function renderDashboard() {
   
   // Calculate attendance details for today
   const todayStr = now.toISOString().split('T')[0];
-  const todayAtt = DB.attendance.filter(a => a.date === todayStr);
-  const presentCount = todayAtt.length ? todayAtt.filter(a => a.status === 'Present' || a.status === 'present').length : 96;
-  const attPercent = todayAtt.length ? Math.round(presentCount / todayAtt.length * 100) : 75;
-  const attendanceVal = todayAtt.length ? presentCount : 96;
+  const todayLog = DB.attendance.find(a => a.date === todayStr);
+  let presentCount = 0;
+  let totalChildrenMarked = 0;
+  let attPercent = 0;
+  let attendanceVal = 0;
+
+  if (todayLog && todayLog.records) {
+    const recordsKeys = Object.keys(todayLog.records);
+    totalChildrenMarked = recordsKeys.length;
+    presentCount = Object.values(todayLog.records).filter(v => v === 'Present' || v === 'present').length;
+    attPercent = totalChildrenMarked > 0 ? Math.round(presentCount / totalChildrenMarked * 100) : 0;
+    attendanceVal = presentCount;
+  }
 
   const statsData = [
-    { title: 'Total Children', val: totalKids || 128, lbl: 'Active Children', bg: 'bg-g', col: 'col-g', icon: 'bi-people-fill', link: 'children' },
-    { title: "Today's Attendance", val: attendanceVal, lbl: `${attPercent}% Present`, bg: 'bg-b', col: 'col-b', icon: 'bi-calendar2-check-fill', link: 'attendance' },
-    { title: 'Stock Items', val: DB.stock.length || 42, lbl: 'Items in Stock', bg: 'bg-o', col: 'col-o', icon: 'bi-box-seam-fill', link: 'stock' },
-    { title: 'Pending Tasks', val: (lowItems.length + underweight) || 7, lbl: 'Needs Attention', bg: 'bg-p', col: 'col-p', icon: 'bi-clipboard-check-fill', link: 'settings' }
+    { title: 'Total Children', val: totalKids, lbl: 'Active Children', bg: 'bg-g', col: 'col-g', icon: 'bi-people-fill', link: 'children' },
+    { title: "Today's Attendance", val: todayLog ? attendanceVal : '—', lbl: todayLog ? `${attPercent}% Present` : 'Not Marked', bg: 'bg-b', col: 'col-b', icon: 'bi-calendar2-check-fill', link: 'attendance' },
+    { title: 'Stock Items', val: DB.stock.length, lbl: 'Items in Stock', bg: 'bg-o', col: 'col-o', icon: 'bi-box-seam-fill', link: 'stock' },
+    { title: 'Pending Tasks', val: lowItems.length + underweight, lbl: 'Needs Attention', bg: 'bg-p', col: 'col-p', icon: 'bi-clipboard-check-fill', link: 'settings' }
   ];
 
   const statsEl = document.getElementById('dash-stats');
@@ -856,8 +875,14 @@ function renderDashboard() {
     const hasKids = DB.children.length > 0;
     const dataVals = hasKids 
       ? [ageGroups['0-1'], ageGroups['1-2'], ageGroups['2-3'], ageGroups['3-4'], ageGroups['4-6']]
-      : [26, 38, 32, 19, 13]; // exact values from reference image
-    const totalKidsCount = hasKids ? DB.children.length : 128;
+      : [1]; // fallback grey arc
+    const chartLabels = hasKids
+      ? ['0 - 1 Years', '1 - 2 Years', '2 - 3 Years', '3 - 4 Years', '4 - 6 Years']
+      : ['No Registered Children'];
+    const chartColors = hasKids
+      ? ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899']
+      : ['#E5E7EB'];
+    const totalKidsCount = DB.children.length;
     
     setEl('dash-chart-total-kids', totalKidsCount);
     
@@ -865,10 +890,10 @@ function renderDashboard() {
     dashAgeChartInstance = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['0 - 1 Years', '1 - 2 Years', '2 - 3 Years', '3 - 4 Years', '4 - 6 Years'],
+        labels: chartLabels,
         datasets: [{
           data: dataVals,
-          backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899'],
+          backgroundColor: chartColors,
           borderWidth: 0
         }]
       },
@@ -884,17 +909,24 @@ function renderDashboard() {
     
     const legendEl = document.getElementById('dash-age-legend');
     if (legendEl) {
-      const labels = ['0 - 1 Years', '1 - 2 Years', '2 - 3 Years', '3 - 4 Years', '4 - 6 Years'];
-      const colors = ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899'];
-      legendEl.innerHTML = labels.map((lbl, idx) => `
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; font-size:12px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="width:10px; height:10px; border-radius:50%; background:${colors[idx]}; display:inline-block;"></span>
-            <span style="color:#64748b; font-weight:600;">${lbl}</span>
+      if (!hasKids) {
+        legendEl.innerHTML = `
+          <div style="text-align:center; padding: 20px 0; color:var(--text-s); font-size:13px; font-weight:600;">
+            No children registered yet.
+          </div>`;
+      } else {
+        const labels = ['0 - 1 Years', '1 - 2 Years', '2 - 3 Years', '3 - 4 Years', '4 - 6 Years'];
+        const colors = ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899'];
+        legendEl.innerHTML = labels.map((lbl, idx) => `
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; font-size:12px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="width:10px; height:10px; border-radius:50%; background:${colors[idx]}; display:inline-block;"></span>
+              <span style="color:var(--text-s); font-weight:600;">${lbl}</span>
+            </div>
+            <span style="color:var(--text-d); font-weight:700;">${dataVals[idx]} Children</span>
           </div>
-          <span style="color:#1e293b; font-weight:700;">${dataVals[idx]} Children</span>
-        </div>
-      `).join('');
+        `).join('');
+      }
     }
   }
 
@@ -905,9 +937,29 @@ function renderDashboard() {
       dashAttendanceChartInstance.destroy();
     }
     
-    // Mock values matching the image
-    const labels = ['17 May', '18 May', '19 May', '20 May', '21 May', '22 May', '23 May'];
-    const dataVals = [78, 82, 75, 90, 88, 70, 75];
+    const labels = [];
+    const dataVals = [];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dStr = d.toISOString().split('T')[0];
+      
+      const dayNum = d.getDate();
+      const lbl = `${dayNum} ${monthNames[d.getMonth()]}`;
+      labels.push(lbl);
+      
+      const log = DB.attendance.find(a => a.date === dStr);
+      if (log && log.records && Object.keys(log.records).length > 0) {
+        const total = Object.keys(log.records).length;
+        const present = Object.values(log.records).filter(status => status === 'Present' || status === 'present').length;
+        const pct = Math.round((present / total) * 100);
+        dataVals.push(pct);
+      } else {
+        dataVals.push(0);
+      }
+    }
     
     const ctx = attendanceCanvas.getContext('2d');
     
@@ -961,42 +1013,46 @@ function renderDashboard() {
   // ── Recent children
   const recent = DB.children.slice(0, 5);
   const hasKids = recent.length > 0;
-  const displayList = hasKids ? recent : [
-    { child_name: 'Ananya Sharma', age: 2, gender: 'Female', parent_name: 'Priya Sharma', center_name: 'Saraswati Anganwadi' },
-    { child_name: 'Rohan Verma', age: 3, gender: 'Male', parent_name: 'Kavita Verma', center_name: 'Saraswati Anganwadi' },
-    { child_name: 'Diya Patel', age: 1, gender: 'Female', parent_name: 'Neha Patel', center_name: 'Bal Vikas Anganwadi' }
-  ];
   
   const childrenEl = document.getElementById('dash-children');
   if (childrenEl) {
-    childrenEl.innerHTML = `
-      <div class="table-responsive">
-        <table class="ptable">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Child Name</th>
-              <th>Age</th>
-              <th>Gender</th>
-              <th>Mother Name</th>
-              <th>Anganwadi Center</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${displayList.map((c, i) => `
+    if (!hasKids) {
+      childrenEl.innerHTML = `
+        <div style="padding: 40px; text-align: center; color: var(--text-s);">
+          <div style="font-size: 32px; margin-bottom: 10px;">👶</div>
+          <div style="font-weight: 700;">No children registered yet</div>
+          <div style="font-size: 13px; margin-top: 4px;">Go to the <strong>Children Management</strong> section to register children.</div>
+        </div>`;
+    } else {
+      childrenEl.innerHTML = `
+        <div class="table-responsive">
+          <table class="ptable">
+            <thead>
               <tr>
-                <td>${i + 1}</td>
-                <td><strong>${c.child_name}</strong></td>
-                <td>${c.age} Years</td>
-                <td><span class="tag ${c.gender === 'Male' ? 'tag-s' : 'tag-pk'}">${c.gender}</span></td>
-                <td class="col-soft">${c.parent_name || '—'}</td>
-                <td class="col-soft">${c.center_name || u.center || 'Saraswati Anganwadi'}</td>
-                <td><span class="tag tag-g">Active</span></td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>`;
+                <th>#</th>
+                <th>Child Name</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Mother Name</th>
+                <th>Anganwadi Center</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${recent.map((c, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td><strong>${c.child_name}</strong></td>
+                  <td>${c.age} Years</td>
+                  <td><span class="tag ${c.gender === 'Male' ? 'tag-s' : 'tag-pk'}">${c.gender}</span></td>
+                  <td class="col-soft">${c.parent_name || '—'}</td>
+                  <td class="col-soft">${c.center_name || u.center || '—'}</td>
+                  <td><span class="tag tag-g">Active</span></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
   }
 }
 
@@ -1029,6 +1085,26 @@ function normalizeHistory(h) {
     detail: h.distributed_to
       ? `To: ${h.distributed_to}${h.distributed_by ? ' | By: ' + h.distributed_by : ''}`
       : (h.detail || '—'),
+  };
+}
+
+// Normalize backend BMI record → unified fields used across the UI
+function normalizeBmi(r) {
+  if (!r) return null;
+  return {
+    id:                 r.id,
+    child_id:           r.child_id,
+    child_name:         r.child_name || '—',
+    age:                r.age_at_measurement ?? r.age ?? 0,
+    gender:             r.gender || '—',
+    height:             r.height_cm ?? r.height ?? 0,
+    weight:             r.weight_kg ?? r.weight ?? 0,
+    bmi:                r.bmi_value ?? r.bmi ?? 0,
+    category:           r.bmi_category ?? r.category ?? 'Normal',
+    nutrition_status:   r.nutrition_status,
+    ai_recommendation:  r.ai_recommendation,
+    date:               r.measurement_date || r.date || '—',
+    notes:              r.notes || '',
   };
 }
 
@@ -1533,8 +1609,8 @@ function renderAttSummary(dateStr) {
   const col     = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
   el.innerHTML = `
     <div class="att-sum-grid mb-3">
-      <div class="att-sum-card" style="background:#D1FAE5;border-color:#A7F3D0"><div class="att-sum-num" style="color:#065F46">${present}</div><div class="att-sum-lbl">Present</div></div>
-      <div class="att-sum-card" style="background:#FEE2E2;border-color:#FECACA"><div class="att-sum-num" style="color:#991B1B">${absent}</div><div class="att-sum-lbl">Absent</div></div>
+      <div class="att-sum-card att-sum-present"><div class="att-sum-num">${present}</div><div class="att-sum-lbl">Present</div></div>
+      <div class="att-sum-card att-sum-absent"><div class="att-sum-num">${absent}</div><div class="att-sum-lbl">Absent</div></div>
     </div>
     <div style="text-align:center;margin-bottom:10px"><div style="font-family:'Baloo 2',cursive;font-size:32px;font-weight:800;color:${col}">${pct}%</div><div style="font-size:12px;color:var(--text-s);font-weight:700">Attendance Rate</div></div>
     <div class="pbar"><div class="pbar-fill" style="width:${pct}%;background:${col}"></div></div>
@@ -1607,8 +1683,8 @@ function renderAttendanceHistory() {
       <td><strong>${fmt(rec.date)}</strong></td>
       <td><span class="tag tag-s">${days[d.getDay()]}</span></td>
       <td>${total}</td>
-      <td style="color:#065F46;font-weight:800">${present}</td>
-      <td style="color:#991B1B;font-weight:800">${absent}</td>
+      <td class="col-g" style="font-weight:800">${present}</td>
+      <td class="col-r" style="font-weight:800">${absent}</td>
       <td><div class="att-pct-bar"><span class="att-pct-num" style="color:${col}">${pct}%</span><div class="att-pct-track"><div class="att-pct-fill" style="width:${pct}%;background:${col}"></div></div></div></td>
       <td><button class="tbl-btn tbl-btn-view" onclick="selectAttDate('${rec.date}')" title="View"><i class="bi bi-eye-fill"></i></button></td>
     </tr>`;
@@ -2849,7 +2925,7 @@ function buildAiRecHtml(rec, aiData) {
       </div>
 
       <!-- BMI Visual Gauge -->
-      <div style="background:#fff;border-radius:14px;padding:20px;border:1px solid var(--border);margin-bottom:14px">
+      <div style="background:var(--card);border-radius:14px;padding:20px;border:1px solid var(--border);margin-bottom:14px">
         <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
           <div class="bmi-gauge-circle" style="background:${cfg.bg};border-color:${cfg.color};width:110px;height:110px">
             <div class="bmi-gauge-num" style="color:${cfg.color};font-size:32px">${rec.bmi}</div>
@@ -3117,7 +3193,7 @@ async function calculateAndSaveBmi() {
   // Refresh BMI data
   const fetchRes = await apiFetch('/bmi');
   if (fetchRes.success) {
-    DB.bmiRecords = fetchRes.data;
+    DB.bmiRecords = (fetchRes.data || []).map(normalizeBmi);
     updateBmiBadge();
   }
 
@@ -3251,7 +3327,7 @@ async function saveBmiRecord() {
   // Refresh BMI data
   const fetchRes = await apiFetch('/bmi');
   if (fetchRes.success) {
-    DB.bmiRecords = fetchRes.data;
+    DB.bmiRecords = (fetchRes.data || []).map(normalizeBmi);
     updateBmiBadge();
     renderBmiTable(DB.bmiRecords);
   }
@@ -3267,7 +3343,7 @@ async function deleteBmiRecord(id) {
     toast('BMI record deleted.', 'info');
     const fetchRes = await apiFetch('/bmi');
     if (fetchRes.success) {
-      DB.bmiRecords = fetchRes.data;
+      DB.bmiRecords = (fetchRes.data || []).map(normalizeBmi);
       updateBmiBadge();
       renderBmiTable(DB.bmiRecords);
     }

@@ -1117,10 +1117,14 @@ def create_bmi_record():
         "created_at":          now_iso(),
     }
 
-    res = supabase.table("bmi_records").insert(record).execute()
-    if not res.data:
-        return err("Failed to save BMI record", 500)
-    return ok(res.data[0], "BMI record saved", 201)
+    try:
+        res = supabase.table("bmi_records").insert(record).execute()
+        if not res.data:
+            return err("Failed to save BMI record", 500)
+        return ok(res.data[0], "BMI record saved", 201)
+    except Exception as e:
+        logger.error(f"Error saving BMI record: {e}", exc_info=True)
+        return err(f"Database error: {str(e)}", 500)
 
 
 @app.route("/api/bmi/<record_id>", methods=["PUT"])
@@ -1157,8 +1161,12 @@ def update_bmi_record(record_id):
     if not updates:
         return err("No valid fields to update", 400)
 
-    res = supabase.table("bmi_records").update(updates).eq("id", record_id).execute()
-    return ok(res.data[0] if res.data else None, "BMI record updated")
+    try:
+        res = supabase.table("bmi_records").update(updates).eq("id", record_id).execute()
+        return ok(res.data[0] if res.data else None, "BMI record updated")
+    except Exception as e:
+        logger.error(f"Error updating BMI record: {e}", exc_info=True)
+        return err(f"Database error: {str(e)}", 500)
 
 
 @app.route("/api/bmi/<record_id>", methods=["DELETE"])
@@ -1167,8 +1175,12 @@ def delete_bmi_record(record_id):
     if not supabase.table("bmi_records").select("id") \
             .eq("id", record_id).eq("center_id", g.center_id).execute().data:
         return err("BMI record not found", 404)
-    supabase.table("bmi_records").delete().eq("id", record_id).execute()
-    return ok(None, "BMI record deleted")
+    try:
+        supabase.table("bmi_records").delete().eq("id", record_id).execute()
+        return ok(None, "BMI record deleted")
+    except Exception as e:
+        logger.error(f"Error deleting BMI record: {e}", exc_info=True)
+        return err(f"Database error: {str(e)}", 500)
 
 
 @app.route("/api/bmi/<record_id>/ai", methods=["PATCH"])
