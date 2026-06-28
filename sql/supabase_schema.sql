@@ -176,14 +176,39 @@ CREATE TABLE IF NOT EXISTS public.vaccinations (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   child_id uuid NOT NULL,
   vaccine_name character varying NOT NULL,
-  due_date date,
+  vaccine_purpose text NOT NULL,
+  dose_number integer NOT NULL DEFAULT 1,
+  due_date date NOT NULL,
   administered_date date,
-  status character varying DEFAULT 'Pending'::character varying CHECK (status::text = ANY (ARRAY['Pending'::character varying, 'Administered'::character varying]::text[])),
+  administered_by uuid,
+  status character varying NOT NULL DEFAULT 'Upcoming' CHECK (status::text = ANY (ARRAY['Upcoming'::character varying, 'Completed'::character varying, 'Missed'::character varying]::text[])),
+  notes text,
+  batch_number character varying,
+  remarks text,
   center_id uuid NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT vaccinations_pkey PRIMARY KEY (id),
-  CONSTRAINT vaccinations_child_id_fkey FOREIGN KEY (child_id) REFERENCES public.children(id),
-  CONSTRAINT vaccinations_center_id_fkey FOREIGN KEY (center_id) REFERENCES public.centers(id)
+  CONSTRAINT vaccinations_child_id_fkey FOREIGN KEY (child_id) REFERENCES public.children(id) ON DELETE CASCADE,
+  CONSTRAINT vaccinations_center_id_fkey FOREIGN KEY (center_id) REFERENCES public.centers(id) ON DELETE CASCADE,
+  CONSTRAINT vaccinations_administered_by_fkey FOREIGN KEY (administered_by) REFERENCES public.users(id) ON DELETE SET NULL
+);
+
+-- 11B. VACCINATION NOTIFICATIONS TABLE
+CREATE TABLE IF NOT EXISTS public.vaccination_notifications (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  vaccination_id uuid,
+  recipient_name character varying NOT NULL,
+  recipient_mobile character varying NOT NULL,
+  message_type character varying NOT NULL, -- 'WhatsApp', 'SMS', or 'WhatsApp & SMS'
+  notification_type character varying NOT NULL, -- 'Manual', '3_days_before', '1_day_before', 'on_day', 'follow_up', 'emergency'
+  status character varying NOT NULL DEFAULT 'Sent' CHECK (status::text = ANY (ARRAY['Sent'::character varying, 'Delivered'::character varying, 'Failed'::character varying]::text[])),
+  error_message text,
+  sent_at timestamp with time zone DEFAULT now(),
+  center_id uuid NOT NULL,
+  CONSTRAINT vaccination_notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT vaccination_notifications_vaccination_id_fkey FOREIGN KEY (vaccination_id) REFERENCES public.vaccinations(id) ON DELETE CASCADE,
+  CONSTRAINT vaccination_notifications_center_id_fkey FOREIGN KEY (center_id) REFERENCES public.centers(id) ON DELETE CASCADE
 );
 
 -- 12. MATERNAL HEALTH RECORDS TABLE
@@ -230,6 +255,11 @@ CREATE INDEX IF NOT EXISTS idx_bmi_records_child_id ON public.bmi_records(child_
 CREATE INDEX IF NOT EXISTS idx_attendance_center_id ON public.attendance(center_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_child_id ON public.attendance(child_id);
 CREATE INDEX IF NOT EXISTS idx_vaccinations_center_id ON public.vaccinations(center_id);
+CREATE INDEX IF NOT EXISTS idx_vaccinations_child_id ON public.vaccinations(child_id);
+CREATE INDEX IF NOT EXISTS idx_vaccinations_status ON public.vaccinations(status);
+CREATE INDEX IF NOT EXISTS idx_vaccinations_due_date ON public.vaccinations(due_date);
+CREATE INDEX IF NOT EXISTS idx_vaccination_notifications_vaccination_id ON public.vaccination_notifications(vaccination_id);
+CREATE INDEX IF NOT EXISTS idx_vaccination_notifications_center_id ON public.vaccination_notifications(center_id);
 CREATE INDEX IF NOT EXISTS idx_stories_center_id ON public.stories(center_id);
 CREATE INDEX IF NOT EXISTS idx_daily_meals_center_id ON public.daily_meals(center_id);
 

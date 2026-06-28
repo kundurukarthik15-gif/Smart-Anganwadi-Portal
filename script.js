@@ -212,7 +212,7 @@ window.addEventListener('load', async () => {
         village: res.data.center?.village || '', 
         mandal: res.data.center?.mandal || '', 
         district: res.data.center?.district || '', 
-        role: 'Staff' 
+        role: res.data.role || 'Staff' 
       };
       openPortal();
     } else {
@@ -294,7 +294,7 @@ async function doLogin() {
         village: res.data.center.village || '', 
         mandal: res.data.center.mandal || '', 
         district: res.data.center.district || '', 
-        role: 'Staff' 
+        role: res.data.user.role || 'Staff' 
     };
     
     openPortal();
@@ -460,34 +460,45 @@ async function loadInitialData() {
     DB.villageSurveys = [];
     DB.villagers = [];
     DB.reportsHistory = [];
+    DB.vaccinations = [];
+    DB.vaccinationNotifications = [];
 
-    const [children, benef, stocks, history, stories, meetings, bmi, attPhotos, surveys, villagers, repHistory, attHistory] = await Promise.all([
-      apiFetch('/children'),
-      apiFetch('/beneficiaries'),
-      apiFetch('/stocks'),
-      apiFetch('/stocks/history'),
-      apiFetch('/stories'),
-      apiFetch('/meetings'),
-      apiFetch('/bmi'),
-      apiFetch('/attendance/photos'),
-      apiFetch('/village-surveys'),
-      apiFetch('/villagers'),
-      apiFetch('/reports/history'),
-      apiFetch('/attendance/history')
-    ]);
+    if (DB.user.role === 'Parent') {
+      const vax = await apiFetch('/vaccinations');
+      if (vax.success) DB.vaccinations = vax.data || [];
+    } else {
+      const [children, benef, stocks, history, stories, meetings, bmi, attPhotos, surveys, villagers, repHistory, attHistory, vax, vaxLogs] = await Promise.all([
+        apiFetch('/children'),
+        apiFetch('/beneficiaries'),
+        apiFetch('/stocks'),
+        apiFetch('/stocks/history'),
+        apiFetch('/stories'),
+        apiFetch('/meetings'),
+        apiFetch('/bmi'),
+        apiFetch('/attendance/photos'),
+        apiFetch('/village-surveys'),
+        apiFetch('/villagers'),
+        apiFetch('/reports/history'),
+        apiFetch('/attendance/history'),
+        apiFetch('/vaccinations'),
+        apiFetch('/vaccinations/notifications')
+      ]);
 
-    if (children.success) DB.children = children.data || [];
-    if (benef.success) DB.beneficiaries = benef.data || [];
-    if (stocks.success) DB.stock = stocks.data || [];
-    if (history.success) DB.stockHistory = history.data || [];
-    if (stories.success) DB.stories = stories.data || [];
-    if (meetings.success) DB.meetings = meetings.data || [];
-    if (bmi.success) DB.bmiRecords = (bmi.data || []).map(normalizeBmi);
-    if (attPhotos.success) DB.attendancePhotos = attPhotos.data || [];
-    if (surveys.success) DB.villageSurveys = surveys.data || [];
-    if (villagers.success) DB.villagers = villagers.data || [];
-    if (repHistory.success) DB.reportsHistory = repHistory.data || [];
-    if (attHistory.success) DB.attendance = attHistory.data || [];
+      if (children.success) DB.children = children.data || [];
+      if (benef.success) DB.beneficiaries = benef.data || [];
+      if (stocks.success) DB.stock = stocks.data || [];
+      if (history.success) DB.stockHistory = history.data || [];
+      if (stories.success) DB.stories = stories.data || [];
+      if (meetings.success) DB.meetings = meetings.data || [];
+      if (bmi.success) DB.bmiRecords = (bmi.data || []).map(normalizeBmi);
+      if (attPhotos.success) DB.attendancePhotos = attPhotos.data || [];
+      if (surveys.success) DB.villageSurveys = surveys.data || [];
+      if (villagers.success) DB.villagers = villagers.data || [];
+      if (repHistory.success) DB.reportsHistory = repHistory.data || [];
+      if (attHistory.success) DB.attendance = attHistory.data || [];
+      if (vax.success) DB.vaccinations = vax.data || [];
+      if (vaxLogs.success) DB.vaccinationNotifications = vaxLogs.data || [];
+    }
   } catch (err) {
     console.error("Failed to load initial data", err);
     toast("Failed to sync some data from server", "error");
@@ -513,13 +524,28 @@ async function openPortal() {
   if (document.getElementById('sbu-center'))  document.getElementById('sbu-center').textContent  = u.center || '';
   if (document.getElementById('sbu-village')) document.getElementById('sbu-village').textContent = u.village || '';
   if (document.getElementById('sbu-role')) {
-    document.getElementById('sbu-role').textContent    = u.role === 'Admin' ? 'Worker ID: AD12345' : 'Worker ID: AW12345';
+    document.getElementById('sbu-role').textContent    = u.role === 'Admin' ? 'Admin Worker' : u.role === 'Parent' ? 'Parent User' : 'Worker ID: AW12345';
   }
   if (document.getElementById('tb-avatar'))   document.getElementById('tb-avatar').textContent   = av;
   if (document.getElementById('tb-uname')) {
-    document.getElementById('tb-uname').textContent    = u.role === 'Admin' ? 'Admin' : 'Worker';
+    document.getElementById('tb-uname').textContent    = u.role === 'Admin' ? 'Admin' : u.role === 'Parent' ? 'Parent' : 'Worker';
   }
   if (document.getElementById('tb-ucenter'))  document.getElementById('tb-ucenter').textContent  = u.center;
+
+  // Show/Hide sidebar links dynamically based on user role
+  const sidebarLinks = document.querySelectorAll('.sidebar nav.sb-nav a.sb-link');
+  sidebarLinks.forEach(link => {
+    const actionAttr = link.getAttribute('onclick');
+    if (u.role === 'Parent') {
+      if (actionAttr && (actionAttr.includes("'vaccinations'") || actionAttr.includes("doLogout"))) {
+        link.style.display = 'flex';
+      } else {
+        link.style.display = 'none';
+      }
+    } else {
+      link.style.display = 'flex';
+    }
+  });
 
   const now   = new Date();
   const today = now.toISOString().split('T')[0];
@@ -546,7 +572,11 @@ async function openPortal() {
   if (districtEl)  districtEl.textContent  = u.district || '';
   if (dateEl2)     dateEl2.textContent     = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  showPage('dashboard');
+  if (u.role === 'Parent') {
+    showPage('vaccinations');
+  } else {
+    showPage('dashboard');
+  }
 }
 
 async function doLogout() {
@@ -607,7 +637,8 @@ const PAGE_META = {
   stories:      { icon: '📚', title: 'Digital Story Library' },
   meetings:     { icon: '📅', title: 'Meeting Management' },
   reports:      { icon: '📊', title: 'Reports & Analytics' },
-  settings:     { icon: '⚙️', title: 'Settings' }
+  settings:     { icon: '⚙️', title: 'Settings' },
+  vaccinations: { icon: '🛡️', title: 'Vaccinations & Alerts' }
 };
 
 function showPage(page) {
@@ -646,7 +677,8 @@ function showPage(page) {
     stories:      () => renderStories(DB.stories),
     meetings:     () => renderMeetings('upcoming'),
     reports:      renderReports,
-    settings:     renderSettingsPage
+    settings:     renderSettingsPage,
+    vaccinations: renderVaccinationsPage
   };
   renders[page]?.();
 }
@@ -3871,4 +3903,163 @@ function openVillagerModal(vid) {
   
   const modal = document.getElementById('villagerModal');
   if (modal) new bootstrap.Modal(modal).show();
+}
+
+
+// ================================================================
+//  VACCINATION & ALERTS MODULE
+// ================================================================
+
+// Master Render Entry Point
+function renderVaccinationsPage() {
+  // Fill child select dropdown in schedule card
+  const childSelect = document.getElementById('vax-child-select');
+  if (childSelect) {
+    const origVal = childSelect.value;
+    childSelect.innerHTML = '<option value="">-- Select Child --</option>';
+    DB.children.forEach(c => {
+      childSelect.innerHTML += `<option value="${c.id}">${c.child_name} (Age: ${c.age} Y)</option>`;
+    });
+    if (origVal) childSelect.value = origVal;
+  }
+
+  // Render list queue
+  renderVaxQueue();
+}
+
+async function scheduleVaccination() {
+  const child_id = document.getElementById('vax-child-select').value;
+  const name = document.getElementById('vax-name-input').value.trim();
+  const purpose = document.getElementById('vax-purpose-input').value.trim();
+  const due = document.getElementById('vax-due-input').value;
+
+  if (!child_id || !name || !due) {
+    toast('⚠️ Please select a child, vaccine name, and due date.', 'error');
+    return;
+  }
+
+  const res = await apiFetch('/vaccinations', {
+    method: 'POST',
+    body: JSON.stringify({
+      child_id,
+      vaccine_name: name,
+      vaccine_purpose: purpose || 'Scheduled Immunization Alert',
+      dose_number: 1,
+      due_date: due,
+      notes: ''
+    })
+  });
+
+  if (res.success) {
+    toast('✅ Immunization schedule saved successfully.', 'success');
+    document.getElementById('vax-schedule-form').reset();
+    
+    // Sync DB and reload queue
+    await loadInitialData();
+    renderVaccinationsPage();
+  } else {
+    toast(`❌ Error: ${res.message}`, 'error');
+  }
+}
+
+function renderVaxQueue() {
+  const search = document.getElementById('vax-queue-search').value.toLowerCase();
+  const tbody = document.getElementById('vax-queue-tbody');
+  
+  tbody.innerHTML = '';
+  
+  let list = DB.vaccinations || [];
+  
+  if (search) {
+    list = list.filter(v => 
+      v.vaccine_name.toLowerCase().includes(search) ||
+      (v.children && v.children.child_name.toLowerCase().includes(search))
+    );
+  }
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="padding: 24px; color: var(--text-s)">No active schedules found.</td></tr>`;
+    return;
+  }
+
+  list.forEach(v => {
+    const child = v.children || {};
+    tbody.innerHTML += `
+      <tr>
+        <td class="fw-bold">${child.child_name || 'N/A'}</td>
+        <td>${v.vaccine_name}</td>
+        <td><span class="badge bg-warning-subtle text-warning-emphasis">${fmt(v.due_date)}</span></td>
+        <td>
+          <div style="font-size:13px; font-weight:600">${child.parent_name || '—'}</div>
+          <div style="font-size:11px;color:var(--text-s)">📞 ${child.parent_mobile || '—'}</div>
+        </td>
+        <td class="text-end text-nowrap">
+          <button class="btn btn-sm btn-success" id="btn-notify-wa-${v.id}" onclick="sendVaxNotification('${v.id}', 'whatsapp')" title="Send WhatsApp Message">
+            <i class="bi bi-whatsapp"></i> WhatsApp
+          </button>
+          <button class="btn btn-sm btn-primary ms-1" id="btn-notify-sms-${v.id}" onclick="sendVaxNotification('${v.id}', 'sms')" title="Send SMS Message">
+            <i class="bi bi-chat-text"></i> SMS
+          </button>
+          <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteVaccinationRecord('${v.id}')" title="Delete Schedule">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function deleteVaccinationRecord(id) {
+  if (!confirm('Are you sure you want to delete this vaccination schedule?')) return;
+  
+  const res = await apiFetch(`/vaccinations/${id}`, { method: 'DELETE' });
+  if (res.success) {
+    toast('✅ Schedule deleted successfully', 'success');
+    await loadInitialData();
+    renderVaccinationsPage();
+  } else {
+    toast(`❌ Failed to delete: ${res.message}`, 'error');
+  }
+}
+
+async function sendVaxNotification(id, channel = 'whatsapp') {
+  const targetBtnId = channel === 'whatsapp' ? `btn-notify-wa-${id}` : `btn-notify-sms-${id}`;
+  const btn = document.getElementById(targetBtnId);
+  const original = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>...';
+    btn.disabled = true;
+  }
+
+  const res = await apiFetch(`/vaccinations/${id}/notify`, { method: 'POST' });
+  
+  if (btn) {
+    btn.innerHTML = original;
+    btn.disabled = false;
+  }
+
+  if (res.success) {
+    toast('📣 Notification reminder pushed to parents.', 'success');
+    await loadInitialData();
+    
+    if (res.data && res.data.message_body && res.data.parent_mobile) {
+      let phone = res.data.parent_mobile.replace(/[^0-9]/g, '');
+      if (phone.length === 10) {
+        phone = "91" + phone; // Add default India country code if omitted
+      }
+      const text = encodeURIComponent(res.data.message_body);
+      
+      if (channel === 'whatsapp') {
+        const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${text}`;
+        window.open(waUrl, '_blank');
+      } else if (channel === 'sms') {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const separator = isIOS ? '&' : '?';
+        const smsUrl = `sms:${phone}${separator}body=${text}`;
+        window.open(smsUrl, '_blank');
+      }
+    }
+  } else {
+    toast(`❌ Notification failed: ${res.message}`, 'error');
+  }
 }

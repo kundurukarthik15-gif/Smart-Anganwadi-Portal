@@ -12,13 +12,15 @@ import logging
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 import base64
+import threading
 
 import bcrypt
 import jwt
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, g, send_file, send_from_directory
 from flask_cors import CORS
-from supabase import create_client, Client
+import httpx
+from supabase import create_client, Client, ClientOptions
 
 # ReportLab Imports
 import io
@@ -63,6 +65,19 @@ GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY", "")
 
 # ── Supabase client ─────────────────────────────────────────────
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Force HTTP/1.1 on all Supabase sub-clients to prevent Windows HTTP/2 connection resets (WinError 10054)
+for sub in [supabase.postgrest, supabase.auth, supabase.storage]:
+    if hasattr(sub, "session") and isinstance(sub.session, httpx.Client):
+        try:
+            sub.session.close()
+        except Exception:
+            pass
+        base_url = sub.session.base_url
+        headers = sub.session.headers
+        auth = sub.session.auth
+        timeout = sub.session.timeout
+        sub.session = httpx.Client(http2=False, base_url=base_url, headers=headers, auth=auth, timeout=timeout)
 
 # ── Gemini client ────────────────────────────────────────────────
 gemini_model = None
@@ -316,6 +331,22 @@ def auth_required(f):
         try:
             payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
             user_id = payload["sub"]
+            if payload.get("role") == "Parent":
+                g.user = {
+                    "id": user_id,  # parent mobile
+                    "role": "Parent",
+                    "full_name": payload.get("name", "Parent"),
+                    "email": f"{user_id}@anganwadi.parent",
+                    "center_id": payload.get("center_id"),
+                    "centers": {
+                        "id": payload.get("center_id"),
+                        "center_name": "Anganwadi Center"
+                    }
+                }
+                g.user_id = user_id
+                g.center_id = payload.get("center_id")
+                RESOLVED_USER_CACHE[token] = (g.user, now + timedelta(minutes=10))
+                return f(*args, **kwargs)
         except (jwt.InvalidSignatureError, jwt.InvalidTokenError) as local_exc:
             # 3. Try Supabase Auth verification directly via REST API
             sb_user = verify_supabase_token(token)
@@ -441,6 +472,7 @@ def login():
                     "email":     user_data["email"],
                     "mobile":    user_data.get("mobile", ""),
                     "center_id": user_data["center_id"],
+                    "role":      "Admin" if user_data["email"] == "admin@anganwadi.gov.in" else "Staff"
                 },
                 "center": user_data.get("centers", {}),
             }, "Login successful")
@@ -469,6 +501,7 @@ def login():
             "email":     user["email"],
             "mobile":    user.get("mobile", ""),
             "center_id": user["center_id"],
+            "role":      "Admin" if user["email"] == "admin@anganwadi.gov.in" else "Staff"
         },
         "center": user.get("centers", {}),
     }, "Login successful")
@@ -489,6 +522,7 @@ def logout():
 @auth_required
 def profile():
     u = g.user
+    role = "Parent" if u.get("role") == "Parent" else "Admin" if u.get("email") == "admin@anganwadi.gov.in" else "Staff"
     return ok({
         "id":            u["id"],
         "full_name":     u["full_name"],
@@ -497,6 +531,7 @@ def profile():
         "center_id":     u["center_id"],
         "profile_photo": u.get("profile_photo"),
         "center":        u.get("centers", {}),
+        "role":          role
     })
 
 
@@ -3033,6 +3068,11 @@ def test_token():
             "results": results
         })
         
+        return jsonify({
+            "success": True,
+            "results": results
+        })
+        
     except Exception as e:
         import traceback
         return jsonify({
@@ -3040,6 +3080,829 @@ def test_token():
             "error": str(e),
             "traceback": traceback.format_exc()
         }), 500
+
+
+# ================================================================
+#  VACCINATION & ALERTS INTEGRATION
+# ================================================================
+
+# Helper to send SMS & WhatsApp alerts (real Twilio/Fast2SMS if keys exist, mock log fallback)
+def send_sms_whatsapp(to_mobile, message_body, recipient_name, vaccination_id=None, notification_type="Manual", center_id=None):
+    clean_mobile = to_mobile.strip()
+    if not clean_mobile.startswith("+"):
+        if len(clean_mobile) == 10:
+            clean_mobile = "+91" + clean_mobile
+        elif len(clean_mobile) == 12 and clean_mobile.startswith("91"):
+            clean_mobile = "+" + clean_mobile
+            
+    sms_sent = False
+    whatsapp_sent = False
+    error_msg = None
+    
+    TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+    TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+    TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
+    TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
+    FAST2SMS_API_KEY = os.getenv("FAST2SMS_API_KEY")
+
+    # 1. Attempt SMS
+    if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_PHONE_NUMBER:
+        try:
+            from twilio.rest import Client as TwilioClient
+            twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            twilio_client.messages.create(
+                body=message_body,
+                from_=TWILIO_PHONE_NUMBER,
+                to=clean_mobile
+            )
+            sms_sent = True
+            logger.info(f"✅ Twilio SMS sent successfully to {clean_mobile}")
+        except Exception as e:
+            logger.error(f"❌ Twilio SMS failed to {clean_mobile}: {e}")
+            error_msg = f"SMS failed: {e}"
+    elif FAST2SMS_API_KEY:
+        try:
+            import requests
+            url = "https://www.fast2sms.com/dev/bulkV2"
+            f2s_mobile = clean_mobile.replace("+91", "").replace("+", "")
+            payload = {
+                "route": "q",
+                "message": message_body,
+                "language": "english",
+                "numbers": f2s_mobile
+            }
+            headers = {
+                "authorization": FAST2SMS_API_KEY,
+                "Content-Type": "application/json"
+            }
+            res = requests.post(url, json=payload, headers=headers)
+            if res.status_code == 200 and res.json().get("return"):
+                sms_sent = True
+                logger.info(f"✅ Fast2SMS sent successfully to {f2s_mobile}")
+            else:
+                logger.error(f"❌ Fast2SMS failed: {res.text}")
+                error_msg = f"Fast2SMS failed: {res.text}"
+        except Exception as e:
+            logger.error(f"❌ Fast2SMS failed to send to {clean_mobile}: {e}")
+            error_msg = f"Fast2SMS failed: {e}"
+            
+    # 2. Attempt WhatsApp
+    if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_NUMBER:
+        try:
+            from twilio.rest import Client as TwilioClient
+            twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            twilio_client.messages.create(
+                body=message_body,
+                from_=f"whatsapp:{TWILIO_WHATSAPP_NUMBER}",
+                to=f"whatsapp:{clean_mobile}"
+            )
+            whatsapp_sent = True
+            logger.info(f"✅ Twilio WhatsApp sent successfully to {clean_mobile}")
+        except Exception as e:
+            logger.error(f"❌ Twilio WhatsApp failed to {clean_mobile}: {e}")
+            error_msg = (error_msg or "") + f" | WhatsApp failed: {e}"
+            
+    # Mock fallback
+    is_mock = not (sms_sent or whatsapp_sent)
+    if is_mock:
+        logger.info(f"📣 [MOCK NOTIFICATION LOG] To: {recipient_name} ({clean_mobile}) | Type: {notification_type}")
+        logger.info(f"📣 Message:\n{message_body}\n--------------------")
+        sms_sent = True
+        whatsapp_sent = True
+        status = "Delivered"
+    else:
+        status = "Delivered" if (sms_sent or whatsapp_sent) else "Failed"
+        
+    # Log to Database table
+    if center_id:
+        notif_record = {
+            "id": str(uuid.uuid4()),
+            "vaccination_id": vaccination_id,
+            "recipient_name": recipient_name,
+            "recipient_mobile": to_mobile,
+            "message_type": "WhatsApp & SMS" if (sms_sent and whatsapp_sent) else "SMS" if sms_sent else "WhatsApp" if whatsapp_sent else "None",
+            "notification_type": notification_type,
+            "status": status,
+            "error_message": error_msg if status == "Failed" else None,
+            "sent_at": now_iso(),
+            "center_id": center_id
+        }
+        try:
+            supabase.table("vaccination_notifications").insert(notif_record).execute()
+        except Exception as db_err:
+            logger.error(f"❌ Failed to write notification audit log: {db_err}")
+            
+    return sms_sent or whatsapp_sent, status
+
+
+# Automated Reminders Execution
+def send_upcoming_reminders():
+    try:
+        import urllib.parse
+        today = datetime.now(timezone.utc).date()
+        
+        # Query all Upcoming vaccinations with children and centers
+        res = supabase.table("vaccinations").select("*, children(child_name, parent_name, parent_mobile), centers(center_name, address, village, mandal, district, mobile)").eq("status", "Upcoming").execute()
+        
+        if not res.data:
+            return
+            
+        for v in res.data:
+            due_date_str = v.get("due_date")
+            if not due_date_str:
+                continue
+                
+            due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
+            delta_days = (due_date - today).days
+            
+            # Match alert criteria
+            notif_type = None
+            if delta_days == 3:
+                notif_type = "3_days_before"
+            elif delta_days == 1:
+                notif_type = "1_day_before"
+            elif delta_days == 0:
+                notif_type = "on_day"
+                
+            if not notif_type:
+                continue
+                
+            # Check duplicate alert
+            sent_check = supabase.table("vaccination_notifications").select("id").eq("vaccination_id", v["id"]).eq("notification_type", notif_type).execute()
+            if sent_check.data:
+                continue # Already sent
+                
+            child = v.get("children") or {}
+            center = v.get("centers") or {}
+            
+            parent_name = child.get("parent_name") or "Parent"
+            parent_mobile = child.get("parent_mobile")
+            child_name = child.get("child_name") or "Child"
+            vaccine_name = v.get("vaccine_name")
+            purpose = v.get("vaccine_purpose") or "Scheduled Immunization"
+            
+            if not parent_mobile:
+                continue
+                
+            # Maps link
+            maps_url = center.get("google_maps_link")
+            if not maps_url:
+                c_name = center.get("center_name", "")
+                village = center.get("village", "")
+                mandal = center.get("mandal", "")
+                district = center.get("district", "")
+                maps_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote_plus(c_name + ' ' + village + ' ' + mandal + ' ' + district)}"
+                
+            center_name = center.get("center_name", "Anganwadi Center")
+            village = center.get("village", "")
+            mandal = center.get("mandal", "")
+            district = center.get("district", "")
+            address = center.get("address", "")
+            
+            place_desc = f"{center_name}"
+            if village or mandal:
+                place_desc += f" (Village: {village}, Mandal: {mandal}"
+                if district:
+                    place_desc += f", District: {district}"
+                place_desc += ")"
+            if address:
+                place_desc += f"\nAddress: {address}"
+
+            # Construct alert text
+            msg = (
+                f"Dear {parent_name},\n\n"
+                f"Your child *{child_name}* is scheduled to receive the *{vaccine_name}* vaccine on *{due_date_str}* between 09:00 AM and 01:00 PM.\n\n"
+                f"Purpose: {purpose}\n\n"
+                f"📍 Place of Vaccination:\n{place_desc}\n"
+                f"Map Directions: {maps_url}\n\n"
+                f"Please bring your child's vaccination card.\n\n"
+                f"Thank you,\n{center_name} Team"
+            )
+            
+            send_sms_whatsapp(
+                to_mobile=parent_mobile,
+                message_body=msg,
+                recipient_name=parent_name,
+                vaccination_id=v["id"],
+                notification_type=notif_type,
+                center_id=v["center_id"]
+            )
+            
+        # Follow-up checks: check vaccinations completed today
+        today_iso_val = today.isoformat()
+        comp_res = supabase.table("vaccinations").select("*, children(child_name, parent_name, parent_mobile), centers(center_name)").eq("status", "Completed").eq("administered_date", today_iso_val).execute()
+        
+        if comp_res.data:
+            for v in comp_res.data:
+                # Check duplicate follow-up
+                sent_check = supabase.table("vaccination_notifications").select("id").eq("vaccination_id", v["id"]).eq("notification_type", "follow_up").execute()
+                if sent_check.data:
+                    continue
+                    
+                child = v.get("children") or {}
+                center = v.get("centers") or {}
+                parent_name = child.get("parent_name") or "Parent"
+                parent_mobile = child.get("parent_mobile")
+                child_name = child.get("child_name") or "Child"
+                vaccine_name = v.get("vaccine_name")
+                
+                if not parent_mobile:
+                    continue
+                    
+                msg = f"Dear {parent_name},\n\nYour child *{child_name}* has successfully received the *{vaccine_name}* vaccine today at {center.get('center_name', 'Anganwadi Center')}.\n\nInstructions:\n- Bring child's vaccination card on every visit.\n- Monitor child's temperature; if minor fever occurs, use prescribed paracetamol drops.\n- Keep the injection area clean.\n\nThank you,\nSmart Anganwadi Portal"
+                
+                send_sms_whatsapp(
+                    to_mobile=parent_mobile,
+                    message_body=msg,
+                    recipient_name=parent_name,
+                    vaccination_id=v["id"],
+                    notification_type="follow_up",
+                    center_id=v["center_id"]
+                )
+                
+    except Exception as ex:
+        logger.error(f"Error executing automated reminder checks: {ex}")
+
+
+def run_reminder_scheduler():
+    import time
+    # Initial sleep of 10s so app is fully set up
+    time.sleep(10)
+    while True:
+        try:
+            logger.info("⏰ Background scheduler running: Checking upcoming vaccination reminders...")
+            send_upcoming_reminders()
+        except Exception as e:
+            logger.error(f"❌ Error in reminder scheduler loop: {e}")
+        # Check every 12 hours
+        time.sleep(12 * 3600)
+
+
+# --- VACCINATION CERTIFICATE COMPILER ---
+def compile_vaccination_certificate(vaccination, child, center, staff_name):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=54,
+        rightMargin=54,
+        topMargin=54,
+        bottomMargin=54
+    )
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CertTitle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=20,
+        textColor=colors.HexColor("#1E3A8A"),
+        alignment=1, # Center
+        spaceAfter=15
+    )
+    subtitle_style = ParagraphStyle(
+        'CertSubtitle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=12,
+        textColor=colors.HexColor("#475569"),
+        alignment=1,
+        spaceAfter=25
+    )
+    section_title = ParagraphStyle(
+        'SectionTitle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=14,
+        textColor=colors.HexColor("#1E3A8A"),
+        spaceBefore=15,
+        spaceAfter=8
+    )
+    body_normal = ParagraphStyle(
+        'CertBody',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        textColor=colors.HexColor("#334155"),
+        leading=14
+    )
+    body_bold = ParagraphStyle(
+        'CertBodyBold',
+        parent=body_normal,
+        fontName='Helvetica-Bold'
+    )
+    
+    story = []
+    
+    story.append(Paragraph("🛡️ CERTIFICATE OF IMMUNIZATION", title_style))
+    story.append(Paragraph("Smart Anganwadi Digital Care Portal", subtitle_style))
+    story.append(Spacer(1, 10))
+    
+    details_data = [
+        [Paragraph("<b>Child Name:</b>", body_normal), Paragraph(child.get("child_name", "N/A"), body_bold),
+         Paragraph("<b>Child ID:</b>", body_normal), Paragraph(str(child.get("id", "N/A"))[:8], body_normal)],
+        [Paragraph("<b>Age / Gender:</b>", body_normal), Paragraph(f"{child.get('age', 'N/A')} Y / {child.get('gender', 'N/A')}", body_normal),
+         Paragraph("<b>Parent Name:</b>", body_normal), Paragraph(child.get("parent_name", "N/A"), body_normal)],
+        [Paragraph("<b>Parent Mobile:</b>", body_normal), Paragraph(child.get("parent_mobile", "N/A"), body_normal),
+         Paragraph("<b>Center Name:</b>", body_normal), Paragraph(center.get("center_name", "N/A"), body_normal)],
+        [Paragraph("<b>Location:</b>", body_normal), Paragraph(f"{center.get('village', 'N/A')}, {center.get('mandal', 'N/A')}", body_normal),
+         Paragraph("<b>District:</b>", body_normal), Paragraph(center.get("district", "N/A"), body_normal)]
+    ]
+    
+    details_table = Table(details_data, colWidths=[110, 130, 110, 130])
+    details_table.setStyle(TableStyle([
+        ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor("#E2E8F0")),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    
+    story.append(Paragraph("Child & Guardian Information", section_title))
+    story.append(details_table)
+    story.append(Spacer(1, 20))
+    
+    vaccine_data = [
+        [Paragraph("<b>Immunization Parameter</b>", body_bold), Paragraph("<b>Details</b>", body_bold)],
+        [Paragraph("Vaccine Name:", body_normal), Paragraph(vaccination.get("vaccine_name", "N/A"), body_bold)],
+        [Paragraph("Dose Number:", body_normal), Paragraph(f"Dose {vaccination.get('dose_number', 1)}", body_normal)],
+        [Paragraph("Purpose:", body_normal), Paragraph(vaccination.get("vaccine_purpose", "N/A"), body_normal)],
+        [Paragraph("Date Administered:", body_normal), Paragraph(str(vaccination.get("administered_date", "N/A")), body_bold)],
+        [Paragraph("Status:", body_normal), Paragraph("<font color='green'><b>Completed</b></font>", body_normal)],
+        [Paragraph("Batch Number:", body_normal), Paragraph(vaccination.get("batch_number") or "—", body_normal)],
+        [Paragraph("Remarks / Notes:", body_normal), Paragraph(vaccination.get("remarks") or vaccination.get("notes") or "—", body_normal)],
+        [Paragraph("Certified By:", body_normal), Paragraph(staff_name, body_normal)]
+    ]
+    
+    vaccine_table = Table(vaccine_data, colWidths=[150, 330])
+    vaccine_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#F8FAFC")),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor("#CBD5E1")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#E2E8F0")),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('LEFTPADDING', (0,0), (-1,-1), 10),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    
+    story.append(Paragraph("Immunization Record", section_title))
+    story.append(vaccine_table)
+    story.append(Spacer(1, 40))
+    
+    sig_data = [
+        [
+            Paragraph("<b>Anganwadi Centre Seal</b><br/><br/><br/>🟢 Digitally Verified Stamp", ParagraphStyle('Seal', parent=body_normal, alignment=1)),
+            Paragraph("<b>Certified By</b><br/><br/><br/>________________________<br/>" + staff_name + "<br/>(Anganwadi Worker)", ParagraphStyle('Sig', parent=body_normal, alignment=1))
+        ]
+    ]
+    sig_table = Table(sig_data, colWidths=[240, 240])
+    sig_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('TOPPADDING', (0,0), (-1,-1), 10),
+    ]))
+    story.append(sig_table)
+    
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+# --- VACCINATION API ENDPOINTS ---
+
+@app.route("/api/auth/parent-login", methods=["POST"])
+def parent_login():
+    data = request.get_json() or {}
+    mobile = data.get("parent_mobile", "").strip()
+    password = data.get("password", "").strip()
+    
+    if not mobile or not password:
+        return err("Mobile number and password are required", 400)
+        
+    # Allow login if mobile is registered under any child. Password can be parent@123 or mobile
+    if password not in ("parent@123", mobile):
+        return err("Invalid credentials. Please use 'parent@123' as password.", 401)
+        
+    res = supabase.table("children").select("parent_name, center_id").eq("parent_mobile", mobile).limit(1).execute()
+    if not res.data:
+        return err("Mobile number is not registered under any child in our database", 404)
+        
+    child_info = res.data[0]
+    parent_name = child_info.get("parent_name") or "Parent"
+    center_id = child_info.get("center_id")
+    
+    center_res = supabase.table("centers").select("center_name").eq("id", center_id).execute()
+    center_name = center_res.data[0].get("center_name") if center_res.data else "Anganwadi Center"
+    
+    # Generate Parent Token
+    payload = {
+        "sub": mobile,
+        "role": "Parent",
+        "center_id": center_id,
+        "name": parent_name,
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(days=7)
+    }
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    
+    return ok({
+        "token": token,
+        "user": {
+            "id": mobile,
+            "full_name": parent_name,
+            "email": f"{mobile}@anganwadi.parent",
+            "mobile": mobile,
+            "center_id": center_id,
+            "role": "Parent"
+        },
+        "center": {
+            "id": center_id,
+            "center_name": center_name
+        }
+    }, "Parent authenticated successfully")
+
+
+@app.route("/api/vaccinations", methods=["GET"])
+@auth_required
+def get_vaccinations():
+    search = request.args.get("search", "").strip().lower()
+    status_filter = request.args.get("status", "").strip()
+    child_filter = request.args.get("child_id", "").strip()
+    
+    if g.user.get("role") == "Parent":
+        # Parent scopes to their children only
+        children_res = supabase.table("children").select("id").eq("parent_mobile", g.user_id).execute()
+        child_ids = [c["id"] for c in children_res.data] if children_res.data else []
+        if not child_ids:
+            return ok([])
+        q = supabase.table("vaccinations").select("*, children(child_name, parent_name, parent_mobile)").in_("child_id", child_ids)
+    else:
+        # Staff scopes to their center
+        q = supabase.table("vaccinations").select("*, children(child_name, parent_name, parent_mobile)").eq("center_id", g.center_id)
+        
+    if status_filter:
+        q = q.eq("status", status_filter)
+    if child_filter:
+        q = q.eq("child_id", child_filter)
+        
+    data = q.order("due_date", desc=False).execute().data or []
+    
+    # Apply search filter locally
+    if search:
+        data = [
+            v for v in data
+            if search in v.get("vaccine_name", "").lower()
+            or search in (v.get("children") or {}).get("child_name", "").lower()
+            or search in (v.get("children") or {}).get("parent_name", "").lower()
+        ]
+        
+    return ok(data)
+
+
+@app.route("/api/vaccinations", methods=["POST"])
+@auth_required
+def create_vaccination():
+    if g.user.get("role") == "Parent":
+        return err("Unauthorized", 403)
+        
+    data = request.get_json() or {}
+    required = ["child_id", "vaccine_name", "vaccine_purpose", "due_date"]
+    for f in required:
+        if not data.get(f):
+            return err(f"Field '{f}' is required", 400)
+            
+    # Verify child belongs to center
+    child_res = supabase.table("children").select("id").eq("id", data["child_id"]).eq("center_id", g.center_id).execute()
+    if not child_res.data:
+        return err("Child not found or doesn't belong to this center", 404)
+        
+    # Duplicate vaccination prevention
+    dose_number = int(data.get("dose_number") or 1)
+    dup_res = supabase.table("vaccinations").select("id").eq("child_id", data["child_id"]).eq("vaccine_name", data["vaccine_name"].strip()).eq("dose_number", dose_number).execute()
+    if dup_res.data:
+        return err(f"Duplicate Vaccine Alert: Dose {dose_number} of {data['vaccine_name']} has already been scheduled or recorded for this child.", 409)
+        
+    record = {
+        "id": str(uuid.uuid4()),
+        "child_id": data["child_id"],
+        "vaccine_name": data["vaccine_name"].strip(),
+        "vaccine_purpose": data["vaccine_purpose"].strip(),
+        "dose_number": dose_number,
+        "due_date": data["due_date"],
+        "status": "Upcoming",
+        "notes": data.get("notes", "").strip() or None,
+        "center_id": g.center_id,
+        "created_at": now_iso(),
+        "updated_at": now_iso()
+    }
+    
+    res = supabase.table("vaccinations").insert(record).execute()
+    if not res.data:
+        return err("Failed to schedule vaccination", 500)
+        
+    return ok(res.data[0], "Vaccination scheduled successfully", 201)
+
+
+@app.route("/api/vaccinations/<vid>", methods=["PUT"])
+@auth_required
+def update_vaccination(vid):
+    if g.user.get("role") == "Parent":
+        return err("Unauthorized", 403)
+        
+    existing = supabase.table("vaccinations").select("id, status").eq("id", vid).eq("center_id", g.center_id).execute().data
+    if not existing:
+        return err("Vaccination record not found", 404)
+        
+    data = request.get_json() or {}
+    allowed = ["vaccine_name", "vaccine_purpose", "dose_number", "due_date", "status", "notes", "batch_number", "remarks", "administered_date"]
+    updates = {k: v for k, v in data.items() if k in allowed and v is not None}
+    
+    if not updates:
+        return err("No valid fields to update", 400)
+        
+    # Auto fill administered details if completed
+    if updates.get("status") == "Completed" and existing[0].get("status") != "Completed":
+        if "administered_date" not in updates:
+            updates["administered_date"] = datetime.now(timezone.utc).date().isoformat()
+        updates["administered_by"] = g.user_id
+        
+    updates["updated_at"] = now_iso()
+    
+    res = supabase.table("vaccinations").update(updates).eq("id", vid).execute()
+    if not res.data:
+        return err("Failed to update vaccination record", 500)
+        
+    return ok(res.data[0], "Vaccination record updated successfully")
+
+
+@app.route("/api/vaccinations/<vid>", methods=["DELETE"])
+@auth_required
+def delete_vaccination(vid):
+    if g.user.get("role") == "Parent":
+        return err("Unauthorized", 403)
+        
+    existing = supabase.table("vaccinations").select("id").eq("id", vid).eq("center_id", g.center_id).execute().data
+    if not existing:
+        return err("Vaccination record not found", 404)
+        
+    supabase.table("vaccinations").delete().eq("id", vid).execute()
+    return ok(None, "Vaccination record deleted successfully")
+
+
+@app.route("/api/vaccinations/<vid>/notify", methods=["POST"])
+@auth_required
+def notify_vaccination(vid):
+    if g.user.get("role") == "Parent":
+        return err("Unauthorized", 403)
+        
+    import urllib.parse
+    
+    # Query vaccination details
+    res = supabase.table("vaccinations").select("*, children(child_name, parent_name, parent_mobile)").eq("id", vid).eq("center_id", g.center_id).execute()
+    if not res.data:
+        return err("Vaccination record not found", 404)
+        
+    v = res.data[0]
+    child = v.get("children") or {}
+    parent_name = child.get("parent_name") or "Parent"
+    parent_mobile = child.get("parent_mobile")
+    child_name = child.get("child_name") or "Child"
+    vaccine_name = v.get("vaccine_name")
+    purpose = v.get("vaccine_purpose") or "Scheduled Immunization"
+    due_date_str = v.get("due_date")
+    
+    if not parent_mobile:
+        return err("No parent mobile number registered for this child", 400)
+        
+    # Get Center Location details
+    center_res = supabase.table("centers").select("*").eq("id", g.center_id).execute()
+    center = center_res.data[0] if center_res.data else {}
+    
+    # Coordinates or maps search link
+    maps_url = center.get("google_maps_link")
+    if not maps_url:
+        c_name = center.get("center_name", "")
+        village = center.get("village", "")
+        mandal = center.get("mandal", "")
+        district = center.get("district", "")
+        maps_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote_plus(c_name + ' ' + village + ' ' + mandal + ' ' + district)}"
+        
+    # Schedule timing info
+    data = request.get_json(silent=True) or {}
+    time_val = data.get("time", "09:00 AM to 01:00 PM")
+    
+    center_name = center.get("center_name", "Anganwadi Center")
+    village = center.get("village", "")
+    mandal = center.get("mandal", "")
+    district = center.get("district", "")
+    address = center.get("address", "")
+    
+    place_desc = f"{center_name}"
+    if village or mandal:
+        place_desc += f" (Village: {village}, Mandal: {mandal}"
+        if district:
+            place_desc += f", District: {district}"
+        place_desc += ")"
+    if address:
+        place_desc += f"\nAddress: {address}"
+
+    # Construct alert text
+    msg = (
+        f"Dear {parent_name},\n\n"
+        f"Your child *{child_name}* is scheduled to receive the *{vaccine_name}* vaccine on *{due_date_str}* at *{time_val}*.\n\n"
+        f"Purpose: {purpose}\n\n"
+        f"📍 Place of Vaccination:\n{place_desc}\n"
+        f"Map Directions: {maps_url}\n\n"
+        f"Please bring your child's vaccination card.\n\n"
+        f"Thank you,\n{center_name} Team"
+    )
+    
+    sent, status = send_sms_whatsapp(
+        to_mobile=parent_mobile,
+        message_body=msg,
+        recipient_name=parent_name,
+        vaccination_id=v["id"],
+        notification_type="Manual",
+        center_id=g.center_id
+    )
+    
+    return ok({"status": status, "message_body": msg, "parent_mobile": parent_mobile}, "Notification sent successfully")
+
+
+@app.route("/api/vaccinations/emergency-announcement", methods=["POST"])
+@auth_required
+def emergency_announcement():
+    if g.user.get("role") == "Parent":
+        return err("Unauthorized", 403)
+        
+    data = request.get_json() or {}
+    message_body = data.get("message_body", "").strip()
+    target_category = data.get("target_category", "all") # "all", "0-2", "3-5"
+    
+    if not message_body:
+        return err("Message body is required", 400)
+        
+    # Get children matching category in center
+    kids_res = supabase.table("children").select("parent_name, parent_mobile, age").eq("center_id", g.center_id).execute()
+    kids = kids_res.data or []
+    
+    # Filter kids locally by age range if specified
+    if target_category == "0-2":
+        kids = [k for k in kids if (k.get("age") or 0) <= 2]
+    elif target_category == "3-5":
+        kids = [k for k in kids if 3 <= (k.get("age") or 0) <= 5]
+        
+    if not kids:
+        return ok({"sent_count": 0}, "No parents matched selection criteria")
+        
+    # Send unique parent alerts
+    sent_mobiles = set()
+    sent_count = 0
+    
+    for k in kids:
+        parent_name = k.get("parent_name") or "Parent"
+        parent_mobile = k.get("parent_mobile")
+        
+        if not parent_mobile or parent_mobile in sent_mobiles:
+            continue
+            
+        # Append standard heading/footer to emergency announcement
+        full_msg = f"Smart Anganwadi Emergency Announcement 🚨\n\nDear {parent_name},\n\n{message_body}\n\nThank you,\nSmart Anganwadi Portal"
+        
+        send_sms_whatsapp(
+            to_mobile=parent_mobile,
+            message_body=full_msg,
+            recipient_name=parent_name,
+            vaccination_id=None,
+            notification_type="emergency",
+            center_id=g.center_id
+        )
+        
+        sent_mobiles.add(parent_mobile)
+        sent_count += 1
+        
+    return ok({"sent_count": sent_count}, f"Emergency announcement broadcasted to {sent_count} parents successfully")
+
+
+@app.route("/api/vaccinations/reports", methods=["GET"])
+@auth_required
+def vaccination_reports():
+    if g.user.get("role") == "Parent":
+        return err("Unauthorized", 403)
+        
+    # Total children enrolled
+    kids_res = supabase.table("children").select("id").eq("center_id", g.center_id).execute()
+    total_kids = len(kids_res.data) if kids_res.data else 0
+    
+    # Query vaccinations
+    vac_res = supabase.table("vaccinations").select("status, child_id").eq("center_id", g.center_id).execute()
+    vacs = vac_res.data or []
+    
+    vaccinated_count = sum(1 for v in vacs if v["status"] == "Completed")
+    pending_count = sum(1 for v in vacs if v["status"] == "Upcoming")
+    missed_count = sum(1 for v in vacs if v["status"] == "Missed")
+    
+    # Calculate delivery status counts
+    notif_res = supabase.table("vaccination_notifications").select("status").eq("center_id", g.center_id).execute()
+    notifs = notif_res.data or []
+    
+    delivery_stats = {
+        "Sent": sum(1 for n in notifs if n["status"] == "Sent"),
+        "Delivered": sum(1 for n in notifs if n["status"] == "Delivered"),
+        "Failed": sum(1 for n in notifs if n["status"] == "Failed")
+    }
+    
+    # Group vaccinations by month for history report
+    from collections import defaultdict
+    monthly_data = defaultdict(lambda: {"Completed": 0, "Upcoming": 0, "Missed": 0})
+    
+    for v in vacs:
+        date_str = v.get("due_date")
+        if not date_str:
+            continue
+        month_key = date_str[:7] # YYYY-MM
+        status = v["status"]
+        if status in ("Completed", "Upcoming", "Missed"):
+            monthly_data[month_key][status] += 1
+            
+    # Format monthly report list
+    monthly_report = []
+    for m_key, counts in sorted(monthly_data.items()):
+        monthly_report.append({
+            "month": m_key,
+            "completed": counts["Completed"],
+            "upcoming": counts["Upcoming"],
+            "missed": counts["Missed"]
+        })
+        
+    return ok({
+        "stats": {
+            "total_children": total_kids,
+            "vaccinated_children": vaccinated_count,
+            "pending_vaccinations": pending_count,
+            "missed_vaccinations": missed_count
+        },
+        "notifications": delivery_stats,
+        "monthly_reports": monthly_report
+    })
+
+
+@app.route("/api/vaccinations/<vid>/pdf", methods=["GET"])
+@auth_required
+def download_vaccination_pdf(vid):
+    # Determine center scope
+    # Check vaccination
+    vac_res = supabase.table("vaccinations").select("*").eq("id", vid).execute()
+    if not vac_res.data:
+        return err("Vaccination record not found", 404)
+        
+    v = vac_res.data[0]
+    
+    # Access controls: Parent can only view their own child's PDF
+    if g.user.get("role") == "Parent":
+        children_res = supabase.table("children").select("id").eq("parent_mobile", g.user_id).execute()
+        child_ids = [c["id"] for c in children_res.data] if children_res.data else []
+        if v["child_id"] not in child_ids:
+            return err("Unauthorized", 403)
+    else:
+        # Staff scopes by center
+        if v["center_id"] != g.center_id:
+            return err("Unauthorized", 403)
+            
+    # Fetch Child
+    child_res = supabase.table("children").select("*").eq("id", v["child_id"]).execute()
+    if not child_res.data:
+        return err("Child profile not found", 404)
+    child = child_res.data[0]
+    
+    # Fetch Center
+    center_res = supabase.table("centers").select("*").eq("id", v["center_id"]).execute()
+    center = center_res.data[0] if center_res.data else {}
+    
+    staff_name = "Anganwadi Care Team"
+    if g.user.get("role") != "Parent":
+        staff_name = g.user.get("full_name", "Anganwadi Worker")
+        
+    try:
+        pdf_bytes = compile_vaccination_certificate(v, child, center, staff_name)
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=f"vaccination_certificate_{child.get('child_name','child').replace(' ', '_')}.pdf"
+        )
+    except Exception as ex:
+        logger.error(f"Failed to generate certificate PDF: {ex}")
+        return err(f"Failed to compile PDF certificate: {str(ex)}", 500)
+
+
+@app.route("/api/vaccinations/notifications", methods=["GET"])
+@auth_required
+def get_vaccination_notifications():
+    if g.user.get("role") == "Parent":
+        return err("Unauthorized", 403)
+        
+    res = supabase.table("vaccination_notifications").select("*").eq("center_id", g.center_id).order("sent_at", desc=True).limit(100).execute()
+    return ok(res.data or [])
 
 
 @app.route("/", defaults={"path": ""})
@@ -3065,6 +3928,15 @@ def serve_static(path):
 
 if __name__ == "__main__":
     debug_mode = (FLASK_ENV == "development")
+    
+    # Start background reminder scheduler daemon thread
+    try:
+        scheduler_thread = threading.Thread(target=run_reminder_scheduler, daemon=True)
+        scheduler_thread.start()
+        logger.info("⏰ Background vaccination reminder thread started successfully.")
+    except Exception as t_err:
+        logger.error(f"⚠️ Failed to start background reminder thread: {t_err}")
+        
     app.run(
         host="0.0.0.0",
         port=PORT,
